@@ -1,385 +1,499 @@
 # Notch- Product Requirements Document
 
 Date: March 9, 2026
-Status: Draft v1
+Status: Draft v2
 Product: `Notch-`
+
+> [!TIP]
+> The recommended implementation sequence for this PRD is documented in the [build plan](../architecture/build-plan.md).
 
 ## 1. Product Summary
 
-`Notch-` should be the definitive utility surface for the MacBook notch area: a fast, ambient, premium-feeling top-of-screen layer that turns the notch into a useful system canvas instead of a dead hardware constraint.
+`Notch-` is a personal operating layer for the MacBook notch.
 
-The product should combine:
+It should reproduce the interaction quality of Boring Notch:
 
-- live activity style status surfaces
-- utility shortcuts and transient system controls
-- drag-and-drop shelf behavior
-- media and communication context
-- extensible mini-apps and automations
+- notch-matched closed state
+- fluid hover expansion
+- tactile confirmations and micro-feedback
+- premium motion rhythm
+- top-centered, always-ambient behavior
 
-The product should not start as a kitchen sink. It needs a strong core loop, a clear architecture boundary between public and privileged capabilities, and a release plan that keeps V1 shippable.
+But its information architecture should be different. Instead of centering media and novelty, `Notch-` should become a personal monitoring system for development work and daily habits.
+
+The product should surface:
+
+- Apple Calendar context
+- current Codex, OpenClaw, and Claude Code activity
+- running localhost services
+- habits and habit streaks
+- current learnings
+- Pomodoro / focus tracking
 
 ## 2. Product Vision
 
-Build the best notch-native companion for macOS:
+Build the best notch-native command center for a solo builder:
 
-- visually integrated with the camera housing area
-- instant and ambient, not a dashboard that users must open deliberately
-- high-signal, low-friction, and interaction-light
-- customizable without becoming messy
-- architected for both safe distribution and more powerful advanced modes
+- visually and behaviorally on par with Boring Notch
+- focused on actual daily workflow rather than generic widgets
+- ambient in the closed state, rich in the open state
+- opinionated around developer operations, habits, and focus
+- extensible through adapters and module connectors
 
-## 3. Problem Statement
+## 3. Design Direction
 
-MacBook users with notched displays have a prominent top-of-screen hardware constraint with almost no system-level personalization. Existing apps prove the notch can become useful, but the category is fragmented:
+### Core design requirement
 
-- some products are gimmicky
-- some are too media-centric
-- some rely heavily on brittle private integrations
-- few define a clean, extensible platform model
+The product should target interaction parity with Boring Notch.
 
-There is room for a product that is:
+That means:
 
-- genuinely useful every day
-- visually refined
-- modular
-- technically disciplined
+- the notch should visually feel attached to the hardware cutout
+- hover and expansion timing should feel similarly crisp and responsive
+- drag interactions should feel magnetic and deliberate
+- subtle haptics should confirm meaningful transitions
+- the UI should remain dark, clean, dense, and premium
 
-## 4. Product Goals
+### Important constraint
 
-### Primary goals
+The goal is interaction parity, not literal asset cloning.
 
-- Turn the notch into a high-frequency utility surface users interact with multiple times per day.
-- Deliver clear value in under five minutes after install.
-- Provide a premium baseline using public macOS APIs.
-- Support optional advanced capabilities without forcing risky architecture into the core.
+`Notch-` should not depend on Boring Notch branding, artwork, copy, or exact feature framing. It should define its own module layout, content hierarchy, and product identity around monitoring and personal systems.
 
-### Secondary goals
+## 4. Problem Statement
 
-- Create a foundation for mini-modules and third-party or internal extensions.
-- Support multi-display and non-notched display fallbacks gracefully.
-- Make the product feel native, stable, and intentional rather than hacky.
+Your day is split across multiple disconnected systems:
 
-## 5. Non-Goals
+- Apple Calendar for schedule and commitments
+- Codex, Claude Code, and OpenClaw for active AI-assisted work
+- local dev servers for what is currently live
+- Notion for habits and personal tracking
+- ad hoc notes and fragments for current learning
+- separate timer apps for focus sessions
 
-- Replace the full menu bar.
-- Recreate iPhone Dynamic Island literally.
-- Ship every possible system integration in V1.
-- Depend on private frameworks for core product value.
-- Require unsandboxed helpers for the basic experience.
+None of those systems share a single ambient, high-frequency surface. The menu bar is too small, dashboards are too deliberate, and context is scattered.
 
-## 6. Target Users
+The notch is uniquely suited to become that surface because it is:
 
-### Core users
+- always visible
+- close to the top of visual attention
+- naturally compact in the resting state
+- expandable when deeper context is needed
 
-- MacBook Pro and MacBook Air users with a notched display
-- users who keep many apps open and want faster access to ambient status
-- users who value polished desktop utilities
+## 5. Product Goal
 
-### Secondary users
+Turn the notch into the primary glanceable surface for your workday state.
 
-- creators who want quick media, camera, recording, and drag workflows
-- productivity-focused users who want calendar, reminders, timers, and clipboard-adjacent surfaces
-- power users interested in automation and configurable system affordances
+Success means:
 
-## 7. Product Principles
+- you can tell what matters in under one second
+- the notch gives you a live sense of schedule, focus, and active work
+- you can open a richer context panel without leaving your current task
+- the product becomes part of daily behavior, not a toy
 
-- Ambient first: the app should surface state without demanding attention.
-- One-second value: important interactions must feel instant.
-- Visual restraint: the notch surface must stay dense but calm.
-- Progressive power: simple by default, deeper when configured.
-- Safe core, powerful edge: public-API-first baseline with optional advanced capability tiers.
-- Per-display correctness: geometry and behavior must always respect the active screen.
+## 6. Non-Goals
 
-## 8. Product Strategy
+- Replace your full project management stack.
+- Be a general-purpose widget launcher for every app on the system.
+- Depend on private frameworks for the baseline experience.
+- Require deep setup before the product becomes useful.
+- Be visually generic or dashboard-like.
 
-### Recommended strategy
+## 7. Target User
 
-Adopt a dual-track product strategy:
+Primary user:
 
-- `Core Mode`
-  - public-API-first
-  - stable
-  - broadly distributable
-  - enough value to stand alone
-- `Advanced Mode`
-  - optional privileged capabilities
-  - clearly labeled
-  - isolated behind capability checks and separate architecture boundaries
+- a solo technical operator or founder
+- heavy Mac user
+- runs multiple AI coding agents
+- juggles project work, habits, and learning
+- wants ambient visibility, not another heavyweight dashboard
 
-This preserves product credibility and shipping velocity while leaving room for more aggressive system integrations later.
+Secondary future users:
 
-## 9. Core User Jobs
+- developers running multiple local environments
+- agency operators or PMs supervising agents and schedules
+- power users who want a structured “operating layer” above the desktop
 
-- See and control current media without switching context.
-- Drop files into a top-of-screen shelf during multitasking.
-- View quick system states like battery, charging, timers, and calendar context.
-- Access a compact transient HUD for selected actions.
-- Launch or act on lightweight contextual widgets from the notch.
+## 8. Core Product Thesis
 
-## 10. Core Experience
+`Notch-` should answer one question continuously:
 
-`Notch-` should have three main interaction layers:
+What is happening in my day and in my work right now?
 
-### 1. Closed state
+That answer should be encoded into a compact, living notch surface that expands into detail only when needed.
 
-The closed state visually aligns with the notch area and can display subtle live indicators:
+## 9. Core Product Areas
 
-- now playing pulse
-- battery or charging state
-- recording or mic state
-- timer progress
-- unread or pending state badges
+### 1. Schedule
 
-### 2. Peek state
+Show upcoming events, current meeting windows, and the next relevant time block from Apple Calendar.
 
-A compact expansion used for:
+### 2. Agent Activity
 
-- media controls
-- timer completion
-- battery/charging event
-- quick file-drop confirmation
-- calendar next-up glance
+Show what Codex, Claude Code, and OpenClaw are doing now:
 
-### 3. Open state
+- active vs idle
+- current workspace or session
+- latest event or task
+- health / blocked state where available
 
-A fuller panel for:
+### 3. Local Development State
 
-- media details and controls
-- shelf contents
-- quick widgets
-- pinned mini-app modules
+Show which local hosts are running and whether important local services are healthy.
 
-## 11. Feature Scope
+### 4. Habits
+
+Show today’s habits, completion status, streaks, and the next small action.
+
+### 5. Learning
+
+Show what is currently being learned, tracked, or reviewed.
+
+### 6. Focus
+
+Show Pomodoro timer state, focus status, and optionally time-tracking summaries.
+
+## 10. Experience Model
+
+`Notch-` should have four experience layers.
+
+### Closed State
+
+The closed notch is the constant glanceable surface.
+
+It should show a compressed summary such as:
+
+- current focus state
+- next calendar event countdown
+- count of active agents
+- localhost health indicator
+- habit completion progress
+
+It should remain quiet unless a meaningful change occurs.
+
+### Peek State
+
+Peek is a short expansion for transient events:
+
+- meeting starts soon
+- agent completed or failed
+- localhost went down or came up
+- Pomodoro ended
+- habit check-in prompt
+
+Peek should auto-dismiss unless pinned open by the user.
+
+### Open State
+
+Open is the richer dashboard panel anchored to the notch.
+
+It should contain module panes for:
+
+- calendar
+- agents
+- localhost
+- habits
+- learnings
+- focus
+
+### Action State
+
+Action state is a temporary deeper interaction area for:
+
+- marking a habit complete
+- starting or pausing a Pomodoro
+- opening an agent session
+- opening a localhost service
+- capturing a learning entry
+
+## 11. Interaction Requirements
+
+- Hovering the notch should feel intentional and premium.
+- Expansion should not steal focus.
+- Transitions should feel physically attached to the hardware notch.
+- Important transitions should use macOS haptic feedback where supported.
+- Dragging files or URLs into the notch should be supported if the shelf remains part of the product.
+- The product must feel alive without being noisy.
+
+## 12. Haptics Requirements
+
+The product should implement tactile confirmations similar in spirit to Boring Notch:
+
+- open / snap confirmation
+- successful drop interaction
+- important state resolution
+- optional completion feedback for timers and habits
+
+Requirements:
+
+- use platform-supported macOS haptics where available
+- make haptics configurable per interaction class
+- never make haptics mandatory for product clarity
+- gracefully degrade on hardware without supported haptic behavior
+
+## 13. Feature Scope
 
 ### V1 Must-Have
 
-- notch-aware overlay window system
-- single-display support with correct geometry
-- optional all-display support
-- closed / peek / open states
-- drag-to-shelf file intake
-- media live activity and transport controls
-- battery and charging activity
-- calendar next-up widget
-- customizable shortcut to open / toggle
+- notch-aware overlay shell
+- closed / peek / open interaction model
+- Boring Notch-style motion and haptic baseline
+- Apple Calendar integration
+- Codex monitoring
+- Claude Code monitoring
+- OpenClaw monitoring
+- localhost monitoring
+- habits module
+- Notion sync for habits
+- learning log module
+- Pomodoro module
 - settings UI
-- onboarding and permissions flow
+- onboarding and permission flows
 
 ### V1.5 Should-Have
 
-- reminders widget
-- timers and countdowns
-- clipboard recent items
-- camera mirror
-- per-module enable/disable
-- layout presets
-- richer animation system
+- shelf for dropped files and links
+- richer agent drill-down
+- calendar write actions
+- habit reminders and nudges
+- learning capture shortcuts
+- time-tracking summaries
+- daily review mode
 
 ### V2 Could-Have
 
-- extension or plugin system
-- automation triggers and actions
-- app-specific live activities
-- browser download live activities
-- communication widgets
-- device-connectivity widgets
-- advanced HUD replacement
-- lock-screen aware behavior
+- extension system
+- cross-device sync
+- team monitoring mode
+- deeper AI agent orchestration controls
+- historical analytics
+- weekly review and trend views
 
-## 12. Differentiation
+## 14. Functional Requirements
 
-`Notch-` should differentiate through:
+### Windowing and rendering
 
-- stronger product architecture than novelty-first notch apps
-- a better ambient information model
-- cleaner modularity and settings
-- less dependence on fragile/private functionality for core value
-- a clearer path toward extensibility
+- The app must render as a top-centered overlay panel.
+- The closed state must match the real notch geometry when available.
+- The app must work on non-notched displays with a graceful fallback.
+- The app must support multiple displays.
+- The app must survive display changes without visible breakage.
 
-## 13. Functional Requirements
+### Calendar
 
-### Windowing and layout
+- The app must show the current or next Apple Calendar event.
+- The app must support multiple calendars.
+- The app should support simple filtering by selected calendars.
 
-- The app must render as a top-centered overlay panel on supported displays.
-- The closed state must match real notch geometry when available.
-- The app must gracefully fall back on non-notched displays.
-- The app must support screen changes, resolution changes, and display attach/detach events.
-- The app must support fullscreen-safe behavior where possible.
+### Agent monitoring
 
-### State management
+- The app must expose one normalized “agent activity” model across Codex, Claude Code, and OpenClaw.
+- The app must distinguish:
+  - active
+  - idle
+  - completed
+  - blocked / error
+- The app should display workspace/session identity when available.
+- The app must support adapters with different data quality levels per tool.
 
-- The product must support `closed`, `peek`, and `open` states.
-- Each state must be driven by explicit triggers and timeouts.
-- Per-display state must be isolated from shared global state where necessary.
+### Localhost monitoring
 
-### Shelf
+- The app must track configured local hosts and health endpoints.
+- The app must show whether a service is up, down, or degraded.
+- The app should support opening a service directly in the browser.
 
-- Users must be able to drag supported items into the notch region.
-- The shelf must preserve dropped items for a configurable time or until manually removed.
-- The shelf must expose clear actions for open, reveal, share, and remove.
+### Habits
 
-### Media
+- The app must show today’s habits and completion status.
+- The app must support local-first habit tracking even if Notion is disconnected.
+- The app should sync with a Notion-backed habits source of truth.
 
-- The product must show current media title, artist, artwork, and playback state.
-- The product must support play/pause, next, previous, and open-source-app actions.
-- The product should support multiple media backends via a common abstraction.
+### Learning
 
-### Utility widgets
+- The app must support lightweight learning entries.
+- The app should allow a “current learning focus” object, not just an unstructured note feed.
+- The app should support Notion as the primary external sync target.
 
-- The product must support battery activity.
-- The product must support calendar next-up state.
-- The product should support reminders and timers in follow-up milestones.
+### Pomodoro and focus
 
-### Settings
+- The app must provide a first-party Pomodoro timer.
+- The app must support start, pause, resume, skip, and complete.
+- The app should support writing focus summaries into history.
+- The app may optionally sync focus blocks into Notion or Calendar later.
 
-- Users must be able to choose display behavior.
-- Users must be able to control which modules are enabled.
-- Users must be able to configure shortcuts and appearance preferences.
-- Users must see capability-specific permission states and explanations.
-
-## 14. Non-Functional Requirements
-
-- Startup should feel near-instant.
-- Closed-state UI should remain visually stable with no obvious jitter.
-- The app must avoid stealing focus during normal ambient interactions.
-- The product must handle display changes without orphaned or misplaced windows.
-- Feature modules must degrade cleanly when permissions are denied.
-- The app must remain useful if advanced integrations are disabled.
-
-## 15. Technical Architecture
+## 15. Product Architecture
 
 ### Recommended architecture
 
-- SwiftUI for product UI
-- AppKit `NSPanel` overlay windows for notch rendering
-- one window per target display
-- a shared product coordinator plus per-display view models
-- feature managers per domain:
-  - media
-  - battery
-  - calendar
-  - shelf
-  - timers
-  - permissions
-- capability adapters for integrations with clear boundaries
+- runnable macOS app target first for initial delivery
+- SwiftUI for UI
+- AppKit `NSPanel` windows for notch rendering
+- one window per display
+- one shared coordinator plus per-display view models
+- adapter-based module system
+
+Core modules:
+
+- `schedule`
+- `agents`
+- `localhost`
+- `habits`
+- `learning`
+- `focus`
+
+Core shared services:
+
+- permissions manager
+- animation / interaction engine
+- haptics service
+- sync scheduler
+- local store
+- event bus
+
+## 16. Integration Architecture
+
+Each external system should be connected through an adapter with a normalized output model.
+
+### Adapter contract
+
+Each adapter should define:
+
+- capability level
+- auth or permission model
+- freshness model
+- observable entities
+- failure modes
+- privacy impact
 
 ### Capability tiers
 
-#### Tier 1: Safe / core
+#### Tier A: Official and stable
 
-- `NSScreen` geometry and safe area math
-- AppKit overlay windows
-- EventKit
-- AVFoundation camera
-- drag-and-drop
-- user notifications
-- settings and shortcuts
+- Apple Calendar via EventKit
+- Notion via Notion API
+- OpenClaw via documented gateway/session model if available in deployment
 
-#### Tier 2: Sensitive but acceptable with user consent
+#### Tier B: Local observation / semi-stable
 
-- Apple Events automation for specific app control
-- accessibility-dependent features
-- optional background helpers only when clearly justified
+- Codex via local session files and optional wrappers
+- Claude Code via local project/session state and optional hooks
+- localhost via configured probes and process-adjacent observation
 
-#### Tier 3: Advanced / risky
+#### Tier C: Optional advanced
 
-- private frameworks
-- lock-screen-specific display behavior
-- full HUD replacement
-- system brightness or backlight manipulation through private interfaces
+- deeper process inspection
+- privileged socket / process mapping
+- private framework use
 
-Tier 3 must not be required for product-market fit.
+The baseline product must ship with Tier A and Tier B. Tier C is optional and must not block V1.
 
-## 16. Distribution Strategy
+## 17. Data Model
 
-### Recommended
+The product should normalize all sources into a small set of primitives:
 
-Start with a public-API-first build that can ship broadly and stay maintainable.
+- `Signal`
+  - a small, glanceable state visible in the closed notch
+- `Event`
+  - a time-based change such as a meeting, timer finish, or agent completion
+- `ModuleCard`
+  - a richer open-state representation of one domain
+- `Action`
+  - an executable control such as start timer, open host, mark habit done
 
-Then evaluate one of these paths:
+Domain-specific entities:
 
-1. keep one binary and gate advanced features behind capability checks
-2. ship a stable main app and a separate advanced companion/helper
-3. maintain a public-safe release channel and an advanced experimental release channel
+- `CalendarItem`
+- `AgentSession`
+- `LocalService`
+- `HabitEntry`
+- `LearningEntry`
+- `FocusSession`
 
-## 17. Permissions Model
+## 18. Settings Model
 
-The product must request permissions progressively.
+Users must be able to configure:
 
-Rules:
+- module visibility and order
+- closed-state priority rules
+- haptic intensity / enabled events
+- hover behavior
+- auto-open rules
+- display targeting
+- calendar source selection
+- Notion workspace / data source mapping
+- localhost service registry
 
-- only request permission at the moment of value
-- explain why before prompting
-- show degraded fallback when denied
-- avoid asking for accessibility, automation, camera, or calendar access at first launch unless the user enters the related feature flow
+## 19. Privacy and Security
 
-## 18. UX Requirements
+- The product must default to local-first storage for sensitive state.
+- External sync should be opt-in.
+- Agent telemetry should never be sent externally by default.
+- Tokens for Notion or other services must be stored securely.
+- Monitoring should stay read-oriented unless the user enables write actions.
 
-- Closed state must remain elegant and quiet.
-- Peek state must resolve in less than a second.
-- Open state must avoid feeling like a miniature dashboard stuffed into the notch.
-- Motion should reinforce state changes, not decorate them.
-- Module switching must feel intentional and stable.
-- Users must always understand why the notch opened.
+## 20. Orchestration and Validation
 
-## 19. Success Metrics
+The build process for `Notch-` should be orchestration-driven, not edit-only.
 
-### Product metrics
+The first delivery vehicle should be a runnable macOS app target so shell behavior can be verified on real hardware before the architecture is extracted into reusable packages.
 
-- day-1 activation rate
-- percentage of users who enable at least one core module
-- daily open or peek interactions per active user
-- weekly retention
-- shelf usage frequency
-- media interaction completion rate
+After any code-editing task completes, the system should run dedicated tests for the subsystem that was changed before the work is considered complete.
 
-### Quality metrics
+Requirements:
 
-- crash-free sessions
-- display-reposition correctness after monitor changes
-- permission acceptance by feature
-- latency from trigger to visible notch response
+- shell and interaction changes must be followed by dedicated shell, state, or UI behavior tests
+- adapter and integration changes must be followed by dedicated adapter or integration tests
+- store, event bus, and coordinator changes must be followed by dedicated infrastructure tests
+- phase-level work should end with a targeted validation pass, not only a generic full-suite run
+- manual visual checks are useful, but they do not replace dedicated automated tests
+- every new module should define its expected validation surface as part of implementation
 
-## 20. Risks
+The testing model should stay aligned with the phased build plan:
 
-- Over-scoping the product into an unstable utility suite
-- depending too early on private or fragile APIs
-- poor multi-display behavior
-- overlay windows conflicting with fullscreen apps
-- permission fatigue from too many feature prompts
-- UI becoming cluttered as modules grow
+- Phase 0 should validate shell behavior, geometry, animation, focus safety, and haptics
+- Phase 1 should validate the event bus, adapter lifecycle, module registration, and store behavior
+- later phases should validate each module and adapter with tests specific to their domain
 
-## 21. Open Decisions
+## 21. Risks
 
-- Should V1 include camera mirror, or keep V1 strictly utility-first?
-- Should the shelf be transient or persistent by default?
-- Should `Notch-` prioritize media as the hero use case, or position itself as a broader ambient operating layer?
-- Should Advanced Mode exist in the main binary or as a companion/helper architecture?
+- “Boring Notch parity” can drift into imitation instead of product identity.
+- Codex and Claude Code may not expose clean status APIs.
+- localhost monitoring can become messy if it relies on deep process introspection.
+- Notion can become a bottleneck if habits and learning models are over-designed.
+- too many simultaneous modules can overload the notch surface
 
-## 22. Recommended V1 Definition
+## 22. Recommended V1
 
-The strongest V1 is:
+V1 should ship as:
 
-- real notch-aware overlay shell
-- clean closed / peek / open state system
-- shelf
-- media live activity
-- battery activity
-- calendar next-up
-- settings and shortcut model
+- Boring Notch-grade shell and interaction quality
+- calendar module
+- agents module
+- localhost module
+- habits module
+- learning module
+- Pomodoro module
 
-This is enough to feel like a real product, not a prototype, while keeping the technical foundation disciplined.
+The core closed state should summarize:
 
-## 23. Recommended Next Documents
+- next event
+- active agent count
+- host health count
+- habit progress
+- current focus timer
 
-After this PRD, the next planning artifacts should be:
+## 23. Open Questions
 
+- Do you want the shelf to remain in V1, or should the product be purely monitoring-first?
+- Should “current learnings” be sourced only from Notion in V1, or also from local markdown notes?
+- Should the localhost module prioritize manually registered hosts or automatic detection?
+- Do you want write-back actions in V1, or should V1 stay mostly read-first?
+
+## 24. Next Documents
+
+- integration research and feasibility matrix
 - system architecture doc
-- module model and event bus design
-- permissions and capability matrix
-- windowing and display-behavior spec
-- V1 implementation plan
-
-## 24. Product Thesis
-
-If Boring Notch proved the notch can be playful, `Notch-` should prove the notch can become a serious ambient interface layer for macOS.
+- module event model
+- closed-state prioritization spec
+- build plan
