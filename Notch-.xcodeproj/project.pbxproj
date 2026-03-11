@@ -393,14 +393,21 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = "Notch-/Notch-.entitlements";
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+					GENERATE_INFOPLIST_FILE = YES;
+					INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Notch- needs calendar access to show upcoming events and create quick events from the notch.";
+					INFOPLIST_KEY_NSCalendarsUsageDescription = "Notch- needs calendar access to show upcoming events and create quick events from the notch.";
+					INFOPLIST_KEY_NSCameraUsageDescription = "Notch- needs camera access to show the mirror preview in the HUD page.";
+					INFOPLIST_KEY_NSAppleEventsUsageDescription = "Notch- uses Apple Events to control Spotify and Apple Music playback from the media panel.";
+					INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Notch- needs reminders access to create quick reminders from the notch.";
+					INFOPLIST_KEY_NSRemindersUsageDescription = "Notch- needs reminders access to create quick reminders from the notch.";
+					INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -424,14 +431,21 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = "Notch-/Notch-.entitlements";
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+					GENERATE_INFOPLIST_FILE = YES;
+					INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Notch- needs calendar access to show upcoming events and create quick events from the notch.";
+					INFOPLIST_KEY_NSCalendarsUsageDescription = "Notch- needs calendar access to show upcoming events and create quick events from the notch.";
+					INFOPLIST_KEY_NSCameraUsageDescription = "Notch- needs camera access to show the mirror preview in the HUD page.";
+					INFOPLIST_KEY_NSAppleEventsUsageDescription = "Notch- uses Apple Events to control Spotify and Apple Music playback from the media panel.";
+					INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Notch- needs reminders access to create quick reminders from the notch.";
+					INFOPLIST_KEY_NSRemindersUsageDescription = "Notch- needs reminders access to create quick reminders from the notch.";
+					INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

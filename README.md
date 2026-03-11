@@ -4,11 +4,9 @@ Notch application.
 
 ## Docs
 
-- [Boring Notch analysis](docs/analysis/boring-notch-analysis.md)
-- [Ultimate Notch app PRD](docs/prd/ultimate-notch-app-prd.md)
-- [Runnable shell first design](docs/plans/2026-03-09-runnable-shell-first-design.md)
-- [Integration research](docs/research/integration-research.md)
-- [Phase 0 shell research](docs/research/phase-0-shell-research.md)
-- [Integration matrix](docs/research/integration-matrix.md)
-- [Adapter architecture](docs/architecture/adapter-architecture.md)
+- [Docs index](docs/README.md)
+- [Product requirements](docs/prd/ultimate-notch-app-prd.md)
+- [Current implementation state](docs/architecture/current-state.md)
+- [Repository structure](docs/architecture/repository-structure.md)
 - [Build plan](docs/architecture/build-plan.md)
+- [Adapter architecture](docs/architecture/adapter-architecture.md)

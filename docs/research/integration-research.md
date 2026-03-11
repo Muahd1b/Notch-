@@ -1,7 +1,7 @@
 # Notch- Integration Research
 
 Date: March 9, 2026
-Status: Draft
+Status: Active reference
 
 ## Purpose
 

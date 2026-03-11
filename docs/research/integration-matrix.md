@@ -1,7 +1,7 @@
 # Notch- Integration Matrix
 
 Date: March 9, 2026
-Status: Draft
+Status: Active reference
 
 > [!TIP]
 > Use this matrix together with the [build plan](../architecture/build-plan.md) to decide sequence, not just feasibility.

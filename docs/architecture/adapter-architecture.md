@@ -1,10 +1,10 @@
 # Notch- Adapter Architecture
 
 Date: March 9, 2026
-Status: Draft
+Status: Active target architecture
 
 > [!TIP]
-> This document defines the system shape. The recommended construction order lives in the [build plan](./build-plan.md).
+> This document defines the system shape. The recommended construction order lives in the [build plan](./build-plan.md). The currently implemented slice is tracked in [current-state](./current-state.md).
 
 ## Purpose
 

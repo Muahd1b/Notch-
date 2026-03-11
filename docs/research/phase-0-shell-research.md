@@ -1,11 +1,11 @@
 # Notch- Phase 0 Shell Research
 
 Date: March 9, 2026
-Status: Draft
+Status: Active reference
 Phase: Phase 0, shell foundation
 
 > [!TIP]
-> This document translates the Phase 0 section of the [build plan](../architecture/build-plan.md) into implementation-ready guidance.
+> This document translates the Phase 0 section of the [build plan](../architecture/build-plan.md) into implementation-ready guidance. The current implementation status is tracked in [current-state](../architecture/current-state.md).
 
 ## Purpose
 
@@ -249,7 +249,7 @@ Recommended split:
 
 ## Animation Recommendation
 
-Phase 0 should prefer calm, deterministic animation over trying to reproduce every Boring Notch flourish immediately.
+Phase 0 should directly port the Boring Notch shell interaction and animation model for the shell layer, then adapt the content that lives inside it.
 
 Recommended motion principles:
 
@@ -266,9 +266,25 @@ Recommended implementation split:
 
 This reduces the risk of geometry drift during transitions.
 
+## Boring Notch Shape And Access Findings
+
+The Boring Notch shell feel comes from a tight shell language, not from a complex settings container.
+
+Relevant findings:
+
+- it uses a dedicated `NotchShape` with asymmetric radii instead of a generic rounded rectangle
+- its header uses small black capsule controls for shell actions
+- its extras menu uses a larger rounded-rectangle card language for secondary actions
+- settings is reachable from the open shell header through a gear button in the symbol bar
+- the gear opens a regular macOS settings window, not an inline notch settings mode
+
+Phase 0 implication:
+
+`Notch-` should port the symbol-bar settings affordance immediately from the upstream implementation. That keeps the shell architecture aligned with the intended interaction model from the start.
+
 ## Haptics Recommendation
 
-Use `NSHapticFeedbackManager` as the Phase 0 haptics surface.
+Use the upstream Boring Notch shell haptic trigger model as the interaction reference and map it onto `NSHapticFeedbackManager` in `Notch-`.
 
 Recommended haptic events:
 
@@ -307,13 +323,17 @@ Useful takeaways:
 
 ### Boring Notch
 
-Boring Notch is useful as a product-quality reference, but not as a Phase 0 implementation model in full.
+Boring Notch is the direct shell and settings implementation reference for `Notch-` Phase 0 and early Phase 1.
 
 Useful takeaways:
 
 - the shell should feel attached to the hardware cutout
 - a borderless ambient panel model works well
 - notch width and height should come from real screen geometry
+- the open shell should expose a small header action cluster
+- settings should be launchable from the shell header, but the full settings surface should remain a regular app window
+- a small shape vocabulary creates more cohesion than many one-off container styles
+- haptics should be sparse and tied to resolved state changes
 
 Do not carry forward into Phase 0:
 

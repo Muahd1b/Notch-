@@ -1,259 +1,220 @@
 # Notch- Build Plan
 
-Date: March 9, 2026
-Status: Draft
+Date: March 11, 2026
+Status: Active
 
 ## Purpose
 
-This document defines the recommended starting sequence for building `Notch-`.
+This document defines the execution sequence for implementing the page-driven PRD while preserving the shell-first architecture.
 
-The key principle is:
-
-- do not build all integrations at once
-- build the shell first
-- optimize the first milestone for a runnable macOS app
-- validate the notch surface with a few high-value modules
-- add ambiguous agent integrations only after the product already works
+> [!TIP]
+> The current repository status against this plan is tracked in [current-state](./current-state.md). Page-level implementation needs are defined in the [PRD](../prd/ultimate-notch-app-prd.md).
 
 ## Build Strategy
 
-`Notch-` should be built in four stages:
+`Notch-` should be built in five stages:
 
 1. shell foundation
 2. core app spine
-3. guaranteed-value modules
-4. advanced adapters
+3. daily operations pages
+4. communication and agent pages
+5. advanced utility and financial pages
 
-This keeps risk low while making the notch experience testable very early.
+This preserves the original shell-first and low-risk sequence while enabling the expanded page set.
 
-For Phase 0, the fastest correct path is a runnable Xcode macOS app target, not a package-first extraction.
+Current execution note (March 11, 2026):
+
+- Phase 2 calendar/localhost/habits surfaces are active, and the Time Tracking page is now fully interactive.
+- Phase 3 Media Control is beyond UI baseline and now reads live Spotify/Apple Music runtime state through local automation.
+- Phase 4 has started early for HUD parity: camera preview + full-display stream preview are active in the HUD page.
 
 ## Validation Rule
 
 After any code-editing task, run dedicated tests for the subsystem that changed.
 
-This project should not treat validation as a single generic step at the very end.
+Validation must be page-aware:
 
-Examples:
+- shell edits: geometry, state transitions, display behavior, haptics, symbol bar
+- infrastructure edits: event bus, persistence, adapter lifecycle, permissions, diagnostics
+- page edits: page-specific adapter tests, domain model tests, and page UI tests
 
-- shell changes: shell geometry, state, interaction, and UI behavior tests
-- infrastructure changes: store, event bus, coordinator, and adapter lifecycle tests
-- module changes: dedicated tests for the touched module or adapter
+Manual hardware checks complement automated testing but do not replace it.
 
-Manual visual checks should complement this, but not replace it.
+## Page Sequencing Matrix
+
+| Page | Primary phase | Why this phase |
+| --- | --- | --- |
+| Home | 3 | Depends on summaries from other foundational modules |
+| Notifications | 4 | Requires cross-app ingestion and normalization pipeline |
+| Calendar | 3 | High value, stable EventKit integration |
+| Media Control | 4 | Provider auth and transport abstraction complexity |
+| Habits | 3 | Local-first value plus Notion sync |
+| Agents Status | 4 | Depends on heterogeneous provider observability |
+| HUD | 5 | Hardware/permission-heavy and latency-sensitive |
+| Localhost | 3 | Stable probe model, immediate developer value |
+| OpenClaw | 4 | Gateway/chat transport and metrics model |
+| Financial Board | 5 | Connector and reconciliation complexity |
 
 ## Phase 0: Shell Foundation
 
 > [!TIP]
 > Implementation research for this phase lives in [Phase 0 shell research](../research/phase-0-shell-research.md).
 
-Build the notch shell before any external integrations.
-
-### Goals
-
-- prove the notch can function as a daily-use surface
-- lock in the visual and interaction quality
-- validate windowing, animation, and haptics
+Build the notch shell before external integrations.
 
 ### Scope
 
-- Xcode macOS app scaffold
-- app target, unit test target, and UI test target
-- `NSPanel` overlay shell
-- real notch geometry via `NSScreen`
-- closed / peek / open states
-- hover behavior
-- animation timing and transition rules
-- haptics service
-- closed-state layout skeleton
-- open-state panel container
+- Xcode macOS app scaffold with unit/UI test targets
+- `NSPanel` overlay shell and notch geometry resolution
+- closed / peek / open shell states
+- hover behavior and shell animation rhythm
+- shell haptics service
+- top symbol bar frame and page routing scaffold
+- settings launch from shell header
 
 ### Exit Criteria
 
-- app launches as a runnable macOS shell
-- notch renders correctly on the target display
-- transitions feel premium and stable
-- haptic feedback works where supported
-- shell does not steal focus during normal interactions
-- dedicated shell and interaction tests pass after shell edits
+- shell is runnable and stable on target hardware
+- settings can launch from the symbol bar
+- shell behavior tests pass (geometry, state, coordinator, windowing)
+- UI smoke test for shell root and settings launch path passes where environment permits
 
 ## Phase 1: Core App Spine
 
-Once the shell works, build the infrastructure that all modules will depend on.
+Build the shared infrastructure all pages require.
 
 ### Scope
 
 - local persistence layer
 - event bus
 - adapter registry
-- module registry
-- settings model
+- module/page registry
 - permissions manager
+- diagnostics and adapter health surface
+- typed settings store and propagation into shell behavior
 - closed-state prioritization service
-- basic diagnostics surface for adapters
 
 ### Exit Criteria
 
-- modules can register independently
-- shell can consume normalized data from the store
-- adapters can start, stop, and publish health cleanly
-- dedicated infrastructure tests pass after core-spine edits
+- pages can register independently with normalized contracts
+- adapters can start/stop/restart without shell instability
+- settings update live behavior without relaunch where practical
+- infrastructure tests pass for store, event bus, registry, and coordinator boundaries
 
-## Phase 2: Guaranteed-Value Modules
+## Phase 2: Daily Operations Pages
 
-Build the integrations that are the easiest and most reliable first.
+Build the highest-confidence, daily-value pages first.
 
-### Recommended modules
+### Pages in scope
 
-- Pomodoro
-- Apple Calendar
-- localhost health checks
+- Calendar
+- Localhost
+- Focus (Pomodoro)
+- Habits + Learnings local models
+- Home (summary cards based on available page data)
 
-### Why these first
+### Core implementation points
 
-- they create daily value immediately
-- they are technically clear
-- they validate the closed-state information density
-- they do not depend on reverse-engineering agent behavior
-
-### Scope
-
-#### Pomodoro
-
-- local timer engine
-- start / pause / resume / complete
-- completion peek
-- optional haptic completion
-
-#### Apple Calendar
-
-- next event
-- current event
-- countdown
-- selected calendar filtering
-
-#### Localhost
-
-- user-defined service registry
-- health probe polling
-- open-in-browser actions
-- degraded / recovered event peeks
+- EventKit-backed calendar read path and quick-create foundations
+- localhost service registry and health probes
+- Pomodoro timer engine and completion events
+- local-first habits/learnings storage and metrics
+- home summary aggregation service with freshness and priority ranking
 
 ### Exit Criteria
 
-- the closed notch can summarize:
-  - next event
-  - focus timer
-  - localhost health
-- the open state can show useful detail for all three modules
-- dedicated module tests pass for Pomodoro, Calendar, and localhost work
+- closed state can summarize next event, focus, localhost health, habits progress
+- open pages above are useful with real data, not placeholders
+- page-specific tests pass for Calendar, Localhost, Focus, Habits/Learnings, Home aggregation
 
-## Phase 3: Personal Tracking Modules
+Current status note:
 
-After the shell proves useful, layer in personal systems.
+- Calendar page reads real EventKit events/reminders.
+- Time Tracking is active in UI/runtime with local timer/session behavior.
 
-### Recommended modules
+## Phase 3: Communication And Agent Pages
 
-- local habits model
-- local learning model
-- Notion sync for both
+Build pages with higher integration variability once the shell and spine are proven.
 
-### Scope
+### Pages in scope
 
-- local-first habits storage
-- local-first learning entries
-- Notion connector
-- sync state and conflict handling
+- Notifications
+- Media Control
+- Agents Status
+- OpenClaw
 
-### Exit Criteria
+### Core implementation points
 
-- habits and learnings work without network dependency
-- Notion is additive, not mandatory
-- dedicated module and sync tests pass after habits, learning, and Notion changes
-
-## Phase 4: Agent Monitoring
-
-Only after the product already works as a daily operating layer should agent monitoring be added.
-
-### Recommended order
-
-1. Claude Code local observer
-2. Codex local observer
-3. OpenClaw gateway adapter
-4. Claude hooks adapter
-5. Codex wrapper emitter
-
-### Why agent monitoring is later
-
-- agent systems have uneven observability
-- they are the most likely to drift or break
-- they should plug into an already-validated shell
+- notification ingestion and source normalization for WhatsApp/Discord/Instagram/Telegram
+- media provider abstraction for Spotify and Apple Music
+- agent adapters for Codex, Claude Code, Ollama, OpenCode with `ongoing`/`idle` mapping
+- OpenClaw chat transport plus runtime metrics channel
 
 ### Exit Criteria
 
-- agent sessions can be displayed with confidence values
-- failures degrade cleanly
-- shell remains stable if adapters disconnect
-- dedicated adapter tests pass for each agent integration change
+- notifications render with source grouping and recency ordering
+- media controls and queue/recent views function with at least one authenticated provider
+- agents page shows status + process summary; usage fields degrade cleanly when unavailable
+- OpenClaw split panel works with connection and degraded modes
+- adapter and page tests pass for all added integrations
+
+Current status note:
+
+- Media controls and now-playing state are already active for local Spotify/Apple Music app sessions.
+- Remaining work is provider hardening, richer queue semantics, and broader regression coverage.
+
+## Phase 4: Advanced Utility And Financial Pages
+
+Build hardware-sensitive and business-data-heavy pages after core workflow value is established.
+
+### Pages in scope
+
+- HUD
+- Financial Board
+
+### Core implementation points
+
+- camera/HUD surfaces with stream-display utility controls
+- financial connector abstraction, KPI normalization, chart aggregation
+
+### Exit Criteria
+
+- HUD is stable across permission states and hardware contexts
+- financial page shows per-business profit, MRR, revenue, and trend charts
+- reliability and degraded-mode tests pass for permission denial and connector failure paths
+
+Current status note:
+
+- HUD camera and stream-preview surfaces are now implemented and running in open-shell page layout.
+- Remaining HUD work is resilience/performance hardening and optional detached utility-window behavior.
+
+## Phase-Level Validation Matrix
+
+- Phase 0: shell behavior tests + UI smoke checks
+- Phase 1: infrastructure contract and lifecycle tests
+- Phase 2: calendar/localhost/focus/habits/home page tests
+- Phase 3: notifications/media/agents/openclaw adapter + page tests
+- Phase 4: HUD permission/performance tests + financial KPI/connector tests
 
 ## Best First Milestone
 
-The best initial milestone is not “all integrations.”
+The first milestone should prove daily usefulness before broad integration breadth:
 
-It is:
-
-- working notch shell
+- stable notch shell
 - one closed-state summary row
-- one open-state panel
-- Pomodoro
+- open-state routing surface
 - Calendar next event
-- 2 to 3 configured localhost services
+- Pomodoro timer
+- 2 to 3 localhost services
 
-This is the smallest version that proves:
-
-- the notch interaction model
-- information density
-- motion quality
-- haptic quality
-- actual daily usefulness
+Then layer habits and home summaries before communication and agent pages.
 
 ## What Not To Do First
 
-- do not start with Codex, Claude Code, and OpenClaw together
-- do not start with deep process inspection
-- do not start with Notion as the only source of truth
-- do not start by building every module pane in detail
-
-## First Implementation Checklist
-
-### Build first
-
-- runnable macOS app target
-- unit test target
-- UI test target
-- shell window
-- shell view model
-- animation / haptics service
-- event bus
-- Pomodoro engine
-- Calendar adapter
-- localhost probe adapter
-
-### Validate second
-
-- closed-state prioritization
-- peek triggers
-- open-state composition
-- display changes
-- reduced-noise behavior
-- dedicated tests for the subsystem edited in the milestone
-
-### Add later
-
-- habits
-- learnings
-- Notion sync
-- agent adapters
+- do not start with all page integrations in parallel
+- do not build financial and HUD before the core workflow pages are stable
+- do not require provider auth for baseline shell usefulness
+- do not let uncertain agent metrics block page delivery
 
 ## Dependencies
 
@@ -266,10 +227,10 @@ This plan depends on:
 
 ## Decision
 
-The best way to start building `Notch-` is:
+The recommended implementation order is:
 
 1. shell
 2. core infrastructure
-3. Pomodoro + Calendar + localhost
-4. habits + learnings + Notion
-5. agent monitoring
+3. Calendar + Localhost + Focus + Habits/Learnings + Home summaries
+4. Notifications + Media + Agents + OpenClaw
+5. HUD + Financial
