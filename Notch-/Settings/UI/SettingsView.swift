@@ -223,7 +223,7 @@ private struct AppearanceSettingsView: View {
             } header: {
                 Text("Shell appearance")
             } footer: {
-                Text("This first pass ports the Boring Notch shell language and adapts its controls to Notch-.")
+                Text("This first pass ports the Boring Notch shell language and adapts its controls to Controll Notch.")
                     .foregroundStyle(.secondary)
                     .font(.caption)
             }
@@ -704,6 +704,12 @@ private struct LocalhostSettingsView: View {
 
 private struct HabitsSettingsView: View {
     @ObservedObject var settings: AppSettingsStore
+    @State private var habits: [ShellHabitProgress] = []
+    @State private var newHabitTitle = ""
+    @State private var newHabitTarget = 1
+    @State private var isMutating = false
+    @State private var feedback: String?
+    @State private var feedbackIsError = false
 
     var body: some View {
         Form {
@@ -727,8 +733,153 @@ private struct HabitsSettingsView: View {
             } header: {
                 Text("Schedule")
             }
+
+            Section {
+                TextField("Habit name", text: $newHabitTitle)
+                    .disabled(!settings.habitsEnabled || isMutating)
+
+                Stepper(value: $newHabitTarget, in: 1...20) {
+                    Text("Daily target: \(newHabitTarget)")
+                }
+                .disabled(!settings.habitsEnabled || isMutating)
+
+                Button("Create habit") {
+                    Task { await createHabit() }
+                }
+                .disabled(!settings.habitsEnabled || isMutating || newHabitTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            } header: {
+                Text("Habit library")
+            }
+
+            Section {
+                if habits.isEmpty {
+                    Text("No habits yet. Create your first habit above.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(habits) { habit in
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(habit.title)
+                                Text("Daily target: \(max(1, habit.targetUnits))")
+                                    .foregroundStyle(.secondary)
+                                    .font(.caption)
+                            }
+                            Spacer()
+                            Button(role: .destructive) {
+                                Task { await deleteHabit(id: habit.id) }
+                            } label: {
+                                Image(systemName: "trash")
+                            }
+                            .buttonStyle(.borderless)
+                            .disabled(isMutating)
+                        }
+                    }
+                }
+            } header: {
+                Text("Current habits")
+            }
+
+            Section {
+                Button("Delete mock data", role: .destructive) {
+                    Task { await deleteMockData() }
+                }
+                .disabled(isMutating)
+                Text("Removes legacy seeded habits and learning entries from earlier builds.")
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("Data")
+            }
+
+            if let feedback {
+                Section {
+                    Text(feedback)
+                        .foregroundStyle(feedbackIsError ? .red : .secondary)
+                }
+            }
+        }
+        .task {
+            await reloadHabits()
         }
         .navigationTitle("Habits")
+    }
+
+    private func reloadHabits() async {
+        guard let runtime = CoreRuntimeServices.shared else {
+            habits = []
+            return
+        }
+        habits = await runtime.habitsForSettings()
+    }
+
+    private func createHabit() async {
+        guard let runtime = CoreRuntimeServices.shared else {
+            feedback = "Habits runtime is unavailable."
+            feedbackIsError = true
+            return
+        }
+
+        let title = newHabitTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { return }
+
+        isMutating = true
+        defer { isMutating = false }
+
+        let created = await runtime.createHabit(title: title, targetUnits: newHabitTarget)
+        await reloadHabits()
+
+        if created {
+            newHabitTitle = ""
+            newHabitTarget = 1
+            feedback = "Habit created."
+            feedbackIsError = false
+        } else {
+            feedback = "Could not create habit. Check if a habit with the same name already exists."
+            feedbackIsError = true
+        }
+    }
+
+    private func deleteHabit(id: String) async {
+        guard let runtime = CoreRuntimeServices.shared else {
+            feedback = "Habits runtime is unavailable."
+            feedbackIsError = true
+            return
+        }
+
+        isMutating = true
+        defer { isMutating = false }
+
+        let deleted = await runtime.deleteHabit(id: id)
+        await reloadHabits()
+
+        if deleted {
+            feedback = "Habit deleted."
+            feedbackIsError = false
+        } else {
+            feedback = "Could not delete habit."
+            feedbackIsError = true
+        }
+    }
+
+    private func deleteMockData() async {
+        guard let runtime = CoreRuntimeServices.shared else {
+            feedback = "Habits runtime is unavailable."
+            feedbackIsError = true
+            return
+        }
+
+        isMutating = true
+        defer { isMutating = false }
+
+        let deleted = await runtime.deleteLegacyMockHabitsLearningData()
+        await reloadHabits()
+
+        if deleted {
+            feedback = "Legacy mock data deleted."
+            feedbackIsError = false
+        } else {
+            feedback = "No legacy mock data found."
+            feedbackIsError = false
+        }
     }
 }
 
@@ -880,7 +1031,7 @@ private struct AboutSettingsView: View {
     var body: some View {
         Form {
             Section {
-                Text("Notch-")
+                Text("Controll Notch")
                     .font(.headline)
                 Text("Developer command center for the notch.")
                     .foregroundStyle(.secondary)

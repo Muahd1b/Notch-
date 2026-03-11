@@ -24,7 +24,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		518BE0DC2F5F5EBC00C4B163 /* Notch-.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Notch-.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		518BE0DC2F5F5EBC00C4B163 /* Controll Notch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Controll Notch.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		518BE0EB2F5F5EC100C4B163 /* Notch-Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Notch-Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		518BE0F52F5F5EC100C4B163 /* Notch-UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Notch-UITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -85,7 +85,7 @@
 		518BE0DD2F5F5EBC00C4B163 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				518BE0DC2F5F5EBC00C4B163 /* Notch-.app */,
+				518BE0DC2F5F5EBC00C4B163 /* Controll Notch.app */,
 				518BE0EB2F5F5EC100C4B163 /* Notch-Tests.xctest */,
 				518BE0F52F5F5EC100C4B163 /* Notch-UITests.xctest */,
 			);
@@ -114,7 +114,7 @@
 			packageProductDependencies = (
 			);
 			productName = "Notch-";
-			productReference = 518BE0DC2F5F5EBC00C4B163 /* Notch-.app */;
+			productReference = 518BE0DC2F5F5EBC00C4B163 /* Controll Notch.app */;
 			productType = "com.apple.product-type.application";
 		};
 		518BE0EA2F5F5EC100C4B163 /* Notch-Tests */ = {
@@ -401,20 +401,23 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 					GENERATE_INFOPLIST_FILE = YES;
-					INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Notch- needs calendar access to show upcoming events and create quick events from the notch.";
-					INFOPLIST_KEY_NSCalendarsUsageDescription = "Notch- needs calendar access to show upcoming events and create quick events from the notch.";
-					INFOPLIST_KEY_NSCameraUsageDescription = "Notch- needs camera access to show the mirror preview in the HUD page.";
-					INFOPLIST_KEY_NSAppleEventsUsageDescription = "Notch- uses Apple Events to control Spotify and Apple Music playback from the media panel.";
-					INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Notch- needs reminders access to create quick reminders from the notch.";
-					INFOPLIST_KEY_NSRemindersUsageDescription = "Notch- needs reminders access to create quick reminders from the notch.";
+					INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Controll Notch needs calendar access to show upcoming events and create quick events from the notch.";
+					INFOPLIST_KEY_NSCalendarsUsageDescription = "Controll Notch needs calendar access to show upcoming events and create quick events from the notch.";
+					INFOPLIST_KEY_NSCameraUsageDescription = "Controll Notch needs camera access to show the mirror preview in the HUD page.";
+					INFOPLIST_KEY_NSAppleEventsUsageDescription = "Controll Notch uses Apple Events to control Spotify and Apple Music playback from the media panel.";
+					INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Controll Notch needs reminders access to create quick reminders from the notch.";
+					INFOPLIST_KEY_NSRemindersUsageDescription = "Controll Notch needs reminders access to create quick reminders from the notch.";
 					INFOPLIST_KEY_NSHumanReadableCopyright = "";
+					INFOPLIST_KEY_CFBundleDisplayName = "Controll Notch";
+					INFOPLIST_KEY_CFBundleName = "Controll Notch";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Muahdib.Notch-";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_MODULE_NAME = Notch_;
+				PRODUCT_NAME = "Controll Notch";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -439,20 +442,23 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 					GENERATE_INFOPLIST_FILE = YES;
-					INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Notch- needs calendar access to show upcoming events and create quick events from the notch.";
-					INFOPLIST_KEY_NSCalendarsUsageDescription = "Notch- needs calendar access to show upcoming events and create quick events from the notch.";
-					INFOPLIST_KEY_NSCameraUsageDescription = "Notch- needs camera access to show the mirror preview in the HUD page.";
-					INFOPLIST_KEY_NSAppleEventsUsageDescription = "Notch- uses Apple Events to control Spotify and Apple Music playback from the media panel.";
-					INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Notch- needs reminders access to create quick reminders from the notch.";
-					INFOPLIST_KEY_NSRemindersUsageDescription = "Notch- needs reminders access to create quick reminders from the notch.";
+					INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Controll Notch needs calendar access to show upcoming events and create quick events from the notch.";
+					INFOPLIST_KEY_NSCalendarsUsageDescription = "Controll Notch needs calendar access to show upcoming events and create quick events from the notch.";
+					INFOPLIST_KEY_NSCameraUsageDescription = "Controll Notch needs camera access to show the mirror preview in the HUD page.";
+					INFOPLIST_KEY_NSAppleEventsUsageDescription = "Controll Notch uses Apple Events to control Spotify and Apple Music playback from the media panel.";
+					INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Controll Notch needs reminders access to create quick reminders from the notch.";
+					INFOPLIST_KEY_NSRemindersUsageDescription = "Controll Notch needs reminders access to create quick reminders from the notch.";
 					INFOPLIST_KEY_NSHumanReadableCopyright = "";
+					INFOPLIST_KEY_CFBundleDisplayName = "Controll Notch";
+					INFOPLIST_KEY_CFBundleName = "Controll Notch";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Muahdib.Notch-";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_MODULE_NAME = Notch_;
+				PRODUCT_NAME = "Controll Notch";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -479,7 +485,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Notch-.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Notch-";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Controll Notch.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Controll Notch";
 			};
 			name = Debug;
 		};
@@ -499,7 +505,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Notch-.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Notch-";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Controll Notch.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Controll Notch";
 			};
 			name = Release;
 		};

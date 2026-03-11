@@ -288,7 +288,7 @@ final class ShellMediaIntegrationService: ObservableObject {
             if !spotifyEnabled && !appleMusicEnabled {
                 statusLabel = "Enable Spotify or Apple Music in Settings"
             } else if spotifyProbe == .automationDenied || appleMusicProbe == .automationDenied {
-                statusLabel = "Allow Notch- in macOS Privacy > Automation"
+                statusLabel = "Allow Controll Notch in macOS Privacy > Automation"
             } else {
                 statusLabel = "Open an enabled media app to connect"
             }

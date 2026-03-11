@@ -111,49 +111,8 @@ struct ShellStatusSnapshot: Equatable {
                 cpuPercent: 34
             ),
         ],
-        habits: [
-            ShellHabitProgress(
-                id: "habit-1",
-                title: "Deep Work",
-                completedUnits: 2,
-                targetUnits: 3,
-                streakDays: 6
-            ),
-            ShellHabitProgress(
-                id: "habit-2",
-                title: "Reading",
-                completedUnits: 18,
-                targetUnits: 25,
-                streakDays: 14
-            ),
-            ShellHabitProgress(
-                id: "habit-3",
-                title: "Workout",
-                completedUnits: 1,
-                targetUnits: 1,
-                streakDays: 3
-            ),
-        ],
-        learningSignals: [
-            ShellLearningSignal(
-                id: "learn-1",
-                title: "EventKit write-only access flow",
-                source: "Calendar",
-                capturedAtLabel: "10m ago"
-            ),
-            ShellLearningSignal(
-                id: "learn-2",
-                title: "Agent idle/ongoing status normalization",
-                source: "Agents",
-                capturedAtLabel: "32m ago"
-            ),
-            ShellLearningSignal(
-                id: "learn-3",
-                title: "RAM threshold for localhost warnings",
-                source: "Localhost",
-                capturedAtLabel: "1h ago"
-            ),
-        ]
+        habits: [],
+        learningSignals: []
     )
 }
 

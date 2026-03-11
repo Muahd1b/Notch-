@@ -4,6 +4,8 @@ import Foundation
 
 @MainActor
 final class CoreRuntimeServices {
+    static weak var shared: CoreRuntimeServices?
+
     let eventBus: NotchEventBus
     let persistenceStore: PersistenceStore
     let diagnostics: RuntimeDiagnostics
@@ -44,6 +46,7 @@ final class CoreRuntimeServices {
         self.notionSyncService = NotionSyncService(eventBus: eventBus, diagnostics: diagnostics)
         self.externalIntegrationsEnabled = integrationEnabled
         self.currentSnapshot = .phaseZero
+        Self.shared = self
     }
 
     func bindShellSnapshotConsumer(_ consumer: @escaping (ShellStatusSnapshot) -> Void) {
@@ -214,6 +217,39 @@ final class CoreRuntimeServices {
         guard externalIntegrationsEnabled else { return }
         await habitsLearningService.toggleHabit(id: id)
         await refreshHabitsLearning()
+    }
+
+    func habitsForSettings() async -> [ShellHabitProgress] {
+        guard externalIntegrationsEnabled else { return [] }
+        await habitsLearningService.refresh()
+        return await habitsLearningService.habits()
+    }
+
+    func createHabit(title: String, targetUnits: Int) async -> Bool {
+        guard externalIntegrationsEnabled else { return false }
+        let created = await habitsLearningService.createHabit(title: title, targetUnits: targetUnits)
+        if created {
+            await refreshHabitsLearning()
+        }
+        return created
+    }
+
+    func deleteHabit(id: String) async -> Bool {
+        guard externalIntegrationsEnabled else { return false }
+        let deleted = await habitsLearningService.deleteHabit(id: id)
+        if deleted {
+            await refreshHabitsLearning()
+        }
+        return deleted
+    }
+
+    func deleteLegacyMockHabitsLearningData() async -> Bool {
+        guard externalIntegrationsEnabled else { return false }
+        let deleted = await habitsLearningService.deleteLegacyMockData()
+        if deleted {
+            await refreshHabitsLearning()
+        }
+        return deleted
     }
 
     func captureLearningSignal() async {
@@ -434,7 +470,7 @@ private actor CalendarEventKitService {
         event.title = title
         event.startDate = start
         event.endDate = end
-        event.notes = "Created from Notch-"
+        event.notes = "Created from Controll Notch"
 
         do {
             try eventStore.save(event, span: .thisEvent)
@@ -781,6 +817,11 @@ private actor LocalhostProbeService {
 }
 
 private actor HabitsLearningStoreService {
+    private enum LegacyMockIDs {
+        static let habits: Set<String> = ["habit-1", "habit-2", "habit-3"]
+        static let learnings: Set<String> = ["learn-1", "learn-2", "learn-3"]
+    }
+
     private enum Keys {
         static let habits = "notch.store.habits"
         static let learnings = "notch.store.learnings"
@@ -837,6 +878,55 @@ private actor HabitsLearningStoreService {
         await publishMutationSignal(type: "habit", id: id)
     }
 
+    func createHabit(title: String, targetUnits: Int) async -> Bool {
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTitle.isEmpty else { return false }
+
+        if cachedHabits.contains(where: { $0.title.localizedCaseInsensitiveCompare(trimmedTitle) == .orderedSame }) {
+            return false
+        }
+
+        let habit = ShellHabitProgress(
+            id: "habit-\(UUID().uuidString)",
+            title: trimmedTitle,
+            completedUnits: 0,
+            targetUnits: max(1, targetUnits),
+            streakDays: 0
+        )
+
+        cachedHabits.append(habit)
+        cachedHabits.sort {
+            $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
+        }
+        await persistHabits()
+        await publishMutationSignal(type: "habit", id: habit.id)
+        return true
+    }
+
+    func deleteHabit(id: String) async -> Bool {
+        guard let index = cachedHabits.firstIndex(where: { $0.id == id }) else { return false }
+        cachedHabits.remove(at: index)
+        await persistHabits()
+        await publishMutationSignal(type: "habit", id: id)
+        return true
+    }
+
+    func deleteLegacyMockData() async -> Bool {
+        let habitsBefore = cachedHabits.count
+        let learningsBefore = cachedLearnings.count
+
+        cachedHabits.removeAll(where: { LegacyMockIDs.habits.contains($0.id) })
+        cachedLearnings.removeAll(where: { LegacyMockIDs.learnings.contains($0.id) })
+
+        let didChange = habitsBefore != cachedHabits.count || learningsBefore != cachedLearnings.count
+        guard didChange else { return false }
+
+        await persistHabits()
+        await persistLearnings()
+        await publishMutationSignal(type: "mock-cleanup", id: "legacy-phase-zero")
+        return true
+    }
+
     func captureLearningSignal() async {
         let formatter = DateFormatter()
         formatter.timeStyle = .short
@@ -860,8 +950,8 @@ private actor HabitsLearningStoreService {
 
     private func loadFromPersistence() async {
         do {
-            cachedHabits = try await persistenceStore.load([ShellHabitProgress].self, for: Keys.habits) ?? ShellStatusSnapshot.phaseZero.habits
-            cachedLearnings = try await persistenceStore.load([ShellLearningSignal].self, for: Keys.learnings) ?? ShellStatusSnapshot.phaseZero.learningSignals
+            cachedHabits = try await persistenceStore.load([ShellHabitProgress].self, for: Keys.habits) ?? []
+            cachedLearnings = try await persistenceStore.load([ShellLearningSignal].self, for: Keys.learnings) ?? []
         } catch {
             if let diagnostics {
                 await diagnostics.record(
@@ -871,8 +961,8 @@ private actor HabitsLearningStoreService {
                     metadata: ["error": String(describing: error)]
                 )
             }
-            cachedHabits = ShellStatusSnapshot.phaseZero.habits
-            cachedLearnings = ShellStatusSnapshot.phaseZero.learningSignals
+            cachedHabits = []
+            cachedLearnings = []
         }
     }
 

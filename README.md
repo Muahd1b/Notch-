@@ -1,6 +1,6 @@
-# Notch-
+# Controll Notch
 
-Notch application.
+Controll Notch application.
 
 ## Docs
 

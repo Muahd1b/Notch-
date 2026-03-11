@@ -123,7 +123,7 @@ private final class ShellMenuBarController: NSObject {
         guard let button = statusItem.button else { return }
         button.image = Self.buildMenuBarIcon()
         button.imagePosition = .imageOnly
-        button.toolTip = "Notch-"
+        button.toolTip = "Controll Notch"
     }
 
     private func buildMenu() -> NSMenu {
@@ -148,7 +148,7 @@ private final class ShellMenuBarController: NSObject {
         menu.addItem(.separator())
 
         let quitItem = NSMenuItem(
-            title: "Quit Notch-",
+            title: "Quit Controll Notch",
             action: #selector(quitApp),
             keyEquivalent: "q"
         )
@@ -174,13 +174,13 @@ private final class ShellMenuBarController: NSObject {
     }
 
     private static func buildMenuBarIcon() -> NSImage {
-        if let symbol = NSImage(systemSymbolName: "yin.yang", accessibilityDescription: "Notch-") {
+        if let symbol = NSImage(systemSymbolName: "yin.yang", accessibilityDescription: "Controll Notch") {
             symbol.isTemplate = true
             return symbol
         }
 
         // Fallback for older symbol catalogs.
-        let fallback = NSImage(systemSymbolName: "circle.lefthalf.filled", accessibilityDescription: "Notch-") ?? NSImage()
+        let fallback = NSImage(systemSymbolName: "circle.lefthalf.filled", accessibilityDescription: "Controll Notch") ?? NSImage()
         fallback.isTemplate = true
         return fallback
     }

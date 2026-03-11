@@ -32,7 +32,7 @@ final class SettingsWindowController: NSWindowController {
     private func setupWindow() {
         guard let window else { return }
 
-        window.title = "Notch- Settings"
+        window.title = "Controll Notch Settings"
         window.titlebarAppearsTransparent = false
         window.titleVisibility = .visible
         window.toolbarStyle = .unified
