@@ -11,7 +11,6 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
     case agents = "Agents"
     case localhost = "Localhost"
     case habits = "Habits"
-    case learnings = "Learnings"
     case focus = "Focus"
     case advanced = "Advanced"
     case about = "About"
@@ -36,8 +35,6 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
             return "server.rack"
         case .habits:
             return "checklist"
-        case .learnings:
-            return "book.closed"
         case .focus:
             return "timer"
         case .advanced:
@@ -53,6 +50,7 @@ struct SettingsView: View {
     private static let minimumWidth: CGFloat = 880
 
     @ObservedObject var settings: AppSettingsStore
+    let runtimeServices: CoreRuntimeServices?
     @State private var selectedTab: SettingsTab = .general
 
     var body: some View {
@@ -85,9 +83,7 @@ struct SettingsView: View {
                 case .localhost:
                     LocalhostSettingsView(settings: settings)
                 case .habits:
-                    HabitsSettingsView(settings: settings)
-                case .learnings:
-                    LearningsSettingsView(settings: settings)
+                    HabitsSettingsView(settings: settings, runtimeServices: runtimeServices)
                 case .focus:
                     FocusSettingsView(settings: settings)
                 case .advanced:
@@ -704,6 +700,7 @@ private struct LocalhostSettingsView: View {
 
 private struct HabitsSettingsView: View {
     @ObservedObject var settings: AppSettingsStore
+    let runtimeServices: CoreRuntimeServices?
     @State private var habits: [ShellHabitProgress] = []
     @State private var newHabitTitle = ""
     @State private var newHabitTarget = 1
@@ -804,7 +801,7 @@ private struct HabitsSettingsView: View {
     }
 
     private func reloadHabits() async {
-        guard let runtime = CoreRuntimeServices.shared else {
+        guard let runtime = runtimeServices ?? CoreRuntimeServices.shared else {
             habits = []
             return
         }
@@ -812,7 +809,7 @@ private struct HabitsSettingsView: View {
     }
 
     private func createHabit() async {
-        guard let runtime = CoreRuntimeServices.shared else {
+        guard let runtime = runtimeServices ?? CoreRuntimeServices.shared else {
             feedback = "Habits runtime is unavailable."
             feedbackIsError = true
             return
@@ -839,7 +836,7 @@ private struct HabitsSettingsView: View {
     }
 
     private func deleteHabit(id: String) async {
-        guard let runtime = CoreRuntimeServices.shared else {
+        guard let runtime = runtimeServices ?? CoreRuntimeServices.shared else {
             feedback = "Habits runtime is unavailable."
             feedbackIsError = true
             return
@@ -861,7 +858,7 @@ private struct HabitsSettingsView: View {
     }
 
     private func deleteMockData() async {
-        guard let runtime = CoreRuntimeServices.shared else {
+        guard let runtime = runtimeServices ?? CoreRuntimeServices.shared else {
             feedback = "Habits runtime is unavailable."
             feedbackIsError = true
             return

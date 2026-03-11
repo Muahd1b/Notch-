@@ -67,6 +67,8 @@ final class ShellAppDelegate: NSObject, NSApplicationDelegate {
                 await coreRuntimeServices?.captureLearningSignal()
             }
         )
+
+        SettingsWindowController.shared.configure(runtimeServices: coreRuntimeServices)
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {

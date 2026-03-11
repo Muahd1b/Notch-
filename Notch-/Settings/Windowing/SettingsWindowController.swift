@@ -9,6 +9,7 @@ final class SettingsWindowController: NSWindowController {
     private static let minimumWindowSize = NSSize(width: 880, height: 680)
 
     private let settingsStore: AppSettingsStore
+    private weak var runtimeServices: CoreRuntimeServices?
 
     private init(settingsStore: AppSettingsStore) {
         self.settingsStore = settingsStore
@@ -46,8 +47,15 @@ final class SettingsWindowController: NSWindowController {
         window.identifier = NSUserInterfaceItemIdentifier("NotchSettingsWindow")
         window.delegate = self
         window.contentViewController = NSHostingController(
-            rootView: SettingsView(settings: settingsStore)
+            rootView: SettingsView(settings: settingsStore, runtimeServices: runtimeServices)
         )
+    }
+
+    func configure(runtimeServices: CoreRuntimeServices?) {
+        self.runtimeServices = runtimeServices
+        if let host = window?.contentViewController as? NSHostingController<SettingsView> {
+            host.rootView = SettingsView(settings: settingsStore, runtimeServices: runtimeServices)
+        }
     }
 
     func showWindow() {

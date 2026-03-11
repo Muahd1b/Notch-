@@ -12,12 +12,12 @@ struct ShellOpenContentView: View {
                 .frame(height: max(24, viewModel.closedNotchSize(for: displayID).height))
 
             if viewModel.selectedOpenTab == .focusTimer ||
-                viewModel.selectedOpenTab == .calendar ||
-                viewModel.selectedOpenTab == .hud
+                viewModel.selectedOpenTab == .hud ||
+                viewModel.selectedOpenTab == .habits
             {
                 openViewportContent
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     .padding(.top, ShellSizing.openContentSpacing)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     .clipped()
             } else {
                 ScrollView(.vertical, showsIndicators: false) {
@@ -46,7 +46,7 @@ struct ShellOpenContentView: View {
             ShellLocalhostPageView(viewModel: viewModel, statusSnapshot: statusSnapshot)
                 .accessibilityIdentifier("shell-localhost-page")
         case .habits:
-            ShellHabitsLearningsPageView(viewModel: viewModel, statusSnapshot: statusSnapshot)
+            ShellHabitsPageView(viewModel: viewModel, statusSnapshot: statusSnapshot)
                 .accessibilityIdentifier("shell-habits-page")
         case .notifications:
             ShellFeaturePlaceholderPageView(

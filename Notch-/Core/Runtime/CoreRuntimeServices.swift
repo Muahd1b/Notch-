@@ -61,12 +61,12 @@ final class CoreRuntimeServices {
             source: "core.runtime"
         )
         await adapterRegistry.startAll()
+        await habitsLearningService.start()
+        await refreshHabitsLearning()
         if externalIntegrationsEnabled {
             configureCalendarStoreChangedObserverIfNeeded()
-            await habitsLearningService.start()
             await refreshCalendar()
             await refreshLocalhost()
-            await refreshHabitsLearning()
         }
     }
 
@@ -184,8 +184,6 @@ final class CoreRuntimeServices {
     }
 
     func refreshHabitsLearning() async {
-        guard externalIntegrationsEnabled else { return }
-
         await habitsLearningService.refresh()
         var habits = await habitsLearningService.habits()
         var learnings = await habitsLearningService.learnings()
@@ -214,19 +212,16 @@ final class CoreRuntimeServices {
     }
 
     func toggleHabitCompletion(id: String) async {
-        guard externalIntegrationsEnabled else { return }
         await habitsLearningService.toggleHabit(id: id)
         await refreshHabitsLearning()
     }
 
     func habitsForSettings() async -> [ShellHabitProgress] {
-        guard externalIntegrationsEnabled else { return [] }
         await habitsLearningService.refresh()
         return await habitsLearningService.habits()
     }
 
     func createHabit(title: String, targetUnits: Int) async -> Bool {
-        guard externalIntegrationsEnabled else { return false }
         let created = await habitsLearningService.createHabit(title: title, targetUnits: targetUnits)
         if created {
             await refreshHabitsLearning()
@@ -235,7 +230,6 @@ final class CoreRuntimeServices {
     }
 
     func deleteHabit(id: String) async -> Bool {
-        guard externalIntegrationsEnabled else { return false }
         let deleted = await habitsLearningService.deleteHabit(id: id)
         if deleted {
             await refreshHabitsLearning()
@@ -244,7 +238,6 @@ final class CoreRuntimeServices {
     }
 
     func deleteLegacyMockHabitsLearningData() async -> Bool {
-        guard externalIntegrationsEnabled else { return false }
         let deleted = await habitsLearningService.deleteLegacyMockData()
         if deleted {
             await refreshHabitsLearning()
@@ -253,7 +246,6 @@ final class CoreRuntimeServices {
     }
 
     func captureLearningSignal() async {
-        guard externalIntegrationsEnabled else { return }
         await habitsLearningService.captureLearningSignal()
         await refreshHabitsLearning()
     }

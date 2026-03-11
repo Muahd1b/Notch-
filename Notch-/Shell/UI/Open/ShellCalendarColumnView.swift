@@ -98,6 +98,7 @@ struct ShellCalendarPageView: View {
     @State private var carouselScrollPosition: Int?
     @State private var carouselByClick = false
     @State private var carouselHaptics = false
+    private let quickActionButtonHeight: CGFloat = 50
     private let timelineViewportHeight: CGFloat = 64
     private let carouselPastDays = 7
     private let carouselFutureDays = 14
@@ -122,26 +123,30 @@ struct ShellCalendarPageView: View {
     }
 
     private var quickCreateColumn: some View {
-        GeometryReader { proxy in
-            let interItemSpacing: CGFloat = 8
-            let tileHeight = max(54, (proxy.size.height - interItemSpacing) / 2)
+        VStack(alignment: .leading, spacing: 8) {
+            hapticActionButton(
+                title: "New Event",
+                symbol: "calendar.badge.plus",
+                action: { viewModel.createCalendarEvent() }
+            )
+            .frame(
+                maxWidth: .infinity,
+                minHeight: quickActionButtonHeight,
+                maxHeight: quickActionButtonHeight,
+                alignment: .leading
+            )
 
-            VStack(alignment: .leading, spacing: interItemSpacing) {
-                hapticActionButton(
-                    title: "New Event",
-                    symbol: "calendar.badge.plus",
-                    action: { viewModel.createCalendarEvent() }
-                )
-                .frame(maxWidth: .infinity, minHeight: tileHeight, maxHeight: tileHeight, alignment: .leading)
-
-                hapticActionButton(
-                    title: "New Reminder",
-                    symbol: "list.bullet.clipboard",
-                    action: { viewModel.createReminder() }
-                )
-                .frame(maxWidth: .infinity, minHeight: tileHeight, maxHeight: tileHeight, alignment: .leading)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            hapticActionButton(
+                title: "New Reminder",
+                symbol: "list.bullet.clipboard",
+                action: { viewModel.createReminder() }
+            )
+            .frame(
+                maxWidth: .infinity,
+                minHeight: quickActionButtonHeight,
+                maxHeight: quickActionButtonHeight,
+                alignment: .leading
+            )
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
@@ -877,7 +882,7 @@ struct ShellFocusTimerPageView: View {
 }
 
 @MainActor
-struct ShellHabitsLearningsPageView: View {
+struct ShellHabitsPageView: View {
     @ObservedObject var viewModel: ShellViewModel
     let statusSnapshot: ShellStatusSnapshot
 
@@ -885,15 +890,18 @@ struct ShellHabitsLearningsPageView: View {
         GeometryReader { proxy in
             let rightWidth = min(320, max(250, proxy.size.width * 0.35))
 
-            HStack(alignment: .top, spacing: 12) {
-                habitsColumn
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            ScrollView(.vertical, showsIndicators: false) {
+                HStack(alignment: .top, spacing: 12) {
+                    habitsColumn
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
 
-                insightsColumn
-                    .frame(width: rightWidth)
-                    .frame(maxHeight: .infinity, alignment: .topLeading)
+                    metricsColumn
+                        .frame(width: rightWidth, alignment: .topLeading)
+                }
+                .frame(maxWidth: .infinity, minHeight: proxy.size.height, alignment: .topLeading)
+                .padding(.bottom, 10)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .scrollBounceBehavior(.basedOnSize, axes: .vertical)
         }
         .onAppear {
             viewModel.habitsPageAppeared()
@@ -919,81 +927,42 @@ struct ShellHabitsLearningsPageView: View {
                 .padding(14)
                 .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 13, style: .continuous))
             } else {
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 7) {
-                        ForEach(statusSnapshot.habits) { habit in
-                            habitCard(habit)
-                        }
+                VStack(alignment: .leading, spacing: 7) {
+                    ForEach(statusSnapshot.habits) { habit in
+                        habitCard(habit)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
 
-    private var insightsColumn: some View {
+    private var metricsColumn: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Insights")
-                    .font(.system(size: 12.5, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.95))
-                Spacer()
-                Button {
-                    viewModel.captureLearningSignal()
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.82))
-                }
-                .buttonStyle(.plain)
-            }
+            Text("Habits Metrics")
+                .font(.system(size: 12.5, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.95))
 
             HStack(spacing: 8) {
                 metricCard(title: "Completed", value: "\(completedHabits)")
                 metricCard(title: "Remaining", value: "\(remainingHabits)")
             }
 
-            HStack(spacing: 8) {
-                metricCard(title: "Best Streak", value: "\(maxStreak)d")
-                metricCard(title: "Signals", value: "\(statusSnapshot.learningSignals.count)")
-            }
+            metricCard(title: "Best Streak", value: "\(maxStreak)d")
 
-            if statusSnapshot.learningSignals.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("No learning signals yet")
-                        .font(.system(size: 11.5, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.82))
-                    Text("Use + to capture one.")
-                        .font(.system(size: 10.5, weight: .medium, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.58))
-                }
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-            } else {
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(Array(statusSnapshot.learningSignals.prefix(5))) { signal in
-                        HStack(spacing: 7) {
-                            Circle()
-                                .fill(.white.opacity(0.45))
-                                .frame(width: 5, height: 5)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(signal.title)
-                                    .font(.system(size: 10.5, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(.white)
-                                    .lineLimit(1)
-                                Text("\(signal.source)  |  \(signal.capturedAtLabel)")
-                                    .font(.system(size: 9.5, weight: .medium, design: .rounded))
-                                    .foregroundStyle(.white.opacity(0.58))
-                                    .lineLimit(1)
-                            }
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 7)
-                        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    }
-                }
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Track completion directly from this page.")
+                    .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.62))
+                Text("Create and manage habits in Settings > Habits.")
+                    .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.62))
             }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+
+            Spacer(minLength: 0)
         }
     }
 
