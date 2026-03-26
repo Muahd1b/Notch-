@@ -1,6 +1,6 @@
 # Notch- Symbol Bar Page Map
 
-Date: March 11, 2026
+Date: March 26, 2026
 Status: Active
 
 ## Purpose
@@ -20,26 +20,28 @@ The page order is fixed:
 5. habits
 6. agents
 7. openclaw
-8. HUD
-9. localhost
-10. financial board
+8. focus timer
+9. HUD
+10. localhost
+11. financial board
 
 ## Side Grouping
 
 Pages are split across both sides of the notch:
 
 - Left side: home, notifications, calendar, media control, habits, agents, openclaw
-- Right side: HUD, localhost, financial board
+- Right side: focus timer, HUD, localhost, financial board
 
 ## SF Symbol Mapping
 
 - home: `house.fill`
 - notifications: `bell.fill`
 - calendar: `calendar`
-- media control: `playpause.fill`
+- media control: `play.fill`
 - habits: `checkmark.circle.fill`
 - agents: `bolt.badge.clock`
 - openclaw: `pawprint.fill`
+- focus timer: `timer`
 - HUD: `microphone.circle`
 - localhost: `server.rack`
 - financial board: `dollarsign.circle`

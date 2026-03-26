@@ -1,6 +1,6 @@
 # Notch- Current Implementation State
 
-Date: March 11, 2026
+Date: March 26, 2026
 Status: Active
 
 ## Purpose
@@ -8,6 +8,8 @@ Status: Active
 This document tracks what is implemented in the repository today and what that means for the next build step.
 
 Use this together with the [build plan](./build-plan.md). The build plan defines the target sequence. This document defines current reality.
+
+For a full repository-wide gap inventory from the latest audit, see [codebase gap analysis (2026-03-26)](./codebase-gap-analysis-2026-03-26.md).
 
 ## Current Phase
 
@@ -30,7 +32,7 @@ Implemented today:
 - notch-matched shape primitives, shell sizing constants, and Boring-style open-shell metrics
 - fixed-size open shell viewport with internal scrolling instead of content-driven outer resizing
 - stable shell shadow/fade attached to the shell container rather than to per-page content
-- expanded open-shell top bar with 10 page symbols split across left and right notch sides
+- expanded open-shell top bar with 11 page symbols split across left and right notch sides
 - typed local settings registry with persisted shell and module-facing keys
 - settings window shell with adapted `Notch-` sidebar and grouped forms
 - shell-focused unit tests plus one UI smoke test for settings launch
@@ -71,6 +73,21 @@ Not implemented yet:
 - persisted focus session history and cross-page focus analytics aggregation
 - detached utility windows for HUD stream workflows (current HUD stream is in-notch preview)
 - full `peek` behavior and deeper page-specific domain rendering for remaining placeholder pages
+- adapter-driven runtime ownership (most integrations are still service-direct via `CoreRuntimeServices`)
+- runtime event-bus consumption (event bus is currently mostly publish-only in production paths)
+- runtime usage of `PageRegistry` for tab enable/disable/order
+- settings-to-runtime wiring for many advanced toggles (agents/diagnostics/closed-state visibility/gesture tuning)
+- localhost service configuration UX (services are still hardcoded in runtime)
+
+## Audit Deltas (March 26, 2026)
+
+The latest full-codebase audit confirms these additional gaps as high priority:
+
+- placeholder pages remain in open-shell routing (`notifications`, `agents`, `openclaw`, `financialBoard`)
+- `AdapterRegistry` and `PageRegistry` are tested but not used as runtime control planes
+- focus sessions remain in-memory only and do not survive app restart
+- Notion integration currently verifies connectivity only; no habits/learnings sync model is active
+- media and HUD runtime behavior is implemented, but dedicated test coverage remains thin
 
 ## Repository Structure
 

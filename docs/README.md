@@ -17,6 +17,7 @@ Use this index as the canonical entrypoint before starting new work.
 - [Phase 0 shell research](./research/phase-0-shell-research.md)
 - [Integration research](./research/integration-research.md)
 - [Integration matrix](./research/integration-matrix.md)
+- [Codebase gap analysis (2026-03-26)](./architecture/codebase-gap-analysis-2026-03-26.md)
 - [Boring Notch settings research](./research/boring-notch-settings-research.md)
 
 ## Reference Material
