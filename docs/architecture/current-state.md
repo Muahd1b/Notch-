@@ -69,7 +69,8 @@ Implemented today:
 
 Not implemented yet:
 
-- production adapters/pages for notifications, agents status, OpenClaw, and financial board
+- production adapters/pages for notifications, OpenClaw, and financial board
+- richer agent monitoring beyond local observer heuristics (event hooks, task usage summaries, provider-specific drill-down)
 - persisted focus session history and cross-page focus analytics aggregation
 - detached utility windows for HUD stream workflows (current HUD stream is in-notch preview)
 - full `peek` behavior and deeper page-specific domain rendering for remaining placeholder pages
@@ -83,7 +84,7 @@ Not implemented yet:
 
 The latest full-codebase audit confirms these additional gaps as high priority:
 
-- placeholder pages remain in open-shell routing (`notifications`, `agents`, `openclaw`, `financialBoard`)
+- placeholder pages remain in open-shell routing (`notifications`, `openclaw`, `financialBoard`)
 - `AdapterRegistry` and `PageRegistry` are tested but not used as runtime control planes
 - focus sessions remain in-memory only and do not survive app restart
 - Notion integration currently verifies connectivity only; no habits/learnings sync model is active
@@ -206,7 +207,7 @@ Phase 0 gaps still open:
 Phase 1 gaps still open:
 
 - adapter registration/lifecycle is scaffolded, but page services are still mostly invoked directly from `CoreRuntimeServices` instead of fully adapter-driven wiring
-- no production adapter implementations are registered in `AdapterRegistry` for notifications/media/agents/openclaw/financial domains
+- no production adapter implementations are registered in `AdapterRegistry` for notifications/media/openclaw/financial domains
 - event bus domain modeling is still uneven across modules (calendar/media are active; remaining pages still pending)
 
 Phase 2 progress:
@@ -223,6 +224,9 @@ Phase 3 progress:
   - right side queue/recent list rendered with the same event-row typography system used by Calendar
 - media state is now sourced from live Spotify/Apple Music app state via AppleScript + distributed notifications
 - remaining Phase 3 media work is provider-hardening (deeper queue APIs, richer error mapping, and automated test coverage across provider states)
+- Agents Status page now has a concrete split UI implementation in shell open state (session list, overview metrics, selected-session detail).
+- `AgentObserverAdapter` is registered and started through `AdapterRegistry`, publishing normalized codex/claude local session snapshots through the event bus.
+- remaining Phase 3 agent work is moving from timestamp heuristics to richer provider events (hooks/wrappers), plus usage and completion signal modeling.
 
 Phase 4 progress:
 
@@ -265,7 +269,7 @@ Recommended order:
 
 1. Harden page reliability and degraded modes for Calendar/EventKit, Media automation, HUD permissions, and Time Tracking timer transitions.
 2. Expand UI and integration test coverage for the four active pages to reduce regressions from shell-level changes.
-3. Finish next placeholder pages in priority order: Notifications, Agents Status, OpenClaw, then Financial Board.
+3. Finish next placeholder pages in priority order: Notifications, OpenClaw, then Financial Board.
 4. Move page services toward adapter-registered runtime ownership so data flow is consistently adapter -> event bus -> store -> UI.
 
 ## Documentation Usage

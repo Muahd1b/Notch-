@@ -59,11 +59,7 @@ struct ShellOpenContentView: View {
             ShellMediaControlPageView(viewModel: viewModel)
             .accessibilityIdentifier("shell-media-control-page")
         case .agents:
-            ShellFeaturePlaceholderPageView(
-                title: "Agents Status",
-                subtitle: "Codex, Claude, Ollama, OpenCode status board",
-                metric: "ongoing / idle"
-            )
+            ShellAgentsPageView(viewModel: viewModel, statusSnapshot: statusSnapshot)
             .accessibilityIdentifier("shell-agents-page")
         case .openClaw:
             ShellFeaturePlaceholderPageView(

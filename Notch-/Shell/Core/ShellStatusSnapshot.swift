@@ -10,6 +10,7 @@ struct ShellStatusSnapshot: Equatable {
     let batteryPercentage: Int
     let calendarEvents: [ShellCalendarEvent]
     let localhostServices: [ShellLocalhostService]
+    let agentSessions: [ShellAgentSession]
     let habits: [ShellHabitProgress]
     let learningSignals: [ShellLearningSignal]
 
@@ -111,6 +112,7 @@ struct ShellStatusSnapshot: Equatable {
                 cpuPercent: 34
             ),
         ],
+        agentSessions: [],
         habits: [],
         learningSignals: []
     )
@@ -191,6 +193,36 @@ struct ShellLocalhostService: Equatable, Identifiable, Codable {
     let status: ShellLocalhostServiceStatus
     let ramUsageMB: Int
     let cpuPercent: Int
+}
+
+enum ShellAgentProvider: String, Equatable, Hashable, Codable {
+    case codex
+    case claudeCode
+
+    var title: String {
+        switch self {
+        case .codex:
+            return "Codex"
+        case .claudeCode:
+            return "Claude"
+        }
+    }
+}
+
+enum ShellAgentSessionStatus: String, Equatable, Codable {
+    case ongoing
+    case idle
+}
+
+struct ShellAgentSession: Equatable, Identifiable, Codable {
+    let id: String
+    let provider: ShellAgentProvider
+    let title: String
+    let workspacePath: String
+    let status: ShellAgentSessionStatus
+    let confidence: AdapterConfidence
+    let lastActivityAt: Date
+    let lastActivityLabel: String
 }
 
 enum ShellLocalhostServiceStatus: String, Equatable, Codable {

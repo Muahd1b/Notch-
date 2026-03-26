@@ -22,10 +22,11 @@ This document defines the execution sequence for implementing the page-driven PR
 
 This preserves the original shell-first and low-risk sequence while enabling the expanded page set.
 
-Current execution note (March 11, 2026):
+Current execution note (March 26, 2026):
 
 - Phase 2 calendar/localhost/habits surfaces are active, and the Time Tracking page is now fully interactive.
 - Phase 3 Media Control is beyond UI baseline and now reads live Spotify/Apple Music runtime state through local automation.
+- Phase 3 Agents Status now has an active shell page and baseline local observer adapter wiring for Codex/Claude session snapshots.
 - Phase 4 has started early for HUD parity: camera preview + full-display stream preview are active in the HUD page.
 
 ## Validation Rule
@@ -161,7 +162,8 @@ Build pages with higher integration variability once the shell and spine are pro
 Current status note:
 
 - Media controls and now-playing state are already active for local Spotify/Apple Music app sessions.
-- Remaining work is provider hardening, richer queue semantics, and broader regression coverage.
+- Agents Status is now active with local observer snapshots flowing through `AdapterRegistry` and the runtime event bus.
+- Remaining work is provider hardening, richer queue semantics, deeper agent event signals, and broader regression coverage.
 
 ## Phase 4: Advanced Utility And Financial Pages
 

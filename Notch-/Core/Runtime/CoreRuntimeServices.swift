@@ -12,11 +12,15 @@ final class CoreRuntimeServices {
     let adapterRegistry: AdapterRegistry
     let permissionsManager: PermissionsManager
     let pageRegistry: PageRegistry
+    private let agentObserverAdapter: AgentObserverAdapter
     private let calendarService: CalendarEventKitService
     private let localhostService: LocalhostProbeService
     private let habitsLearningService: HabitsLearningStoreService
     private let notionSyncService: NotionSyncService
+    private let eventDecoder: JSONDecoder
     private let externalIntegrationsEnabled: Bool
+    private var hasRegisteredAdapters = false
+    private var eventSubscriptionTask: Task<Void, Never>?
     private var shellSnapshotConsumer: ((ShellStatusSnapshot) -> Void)?
     private var currentSnapshot: ShellStatusSnapshot
     private var calendarStoreChangedObserver: NSObjectProtocol?
@@ -36,6 +40,7 @@ final class CoreRuntimeServices {
         self.adapterRegistry = AdapterRegistry(eventBus: eventBus, diagnostics: diagnostics)
         self.permissionsManager = PermissionsManager(eventBus: eventBus)
         self.pageRegistry = PageRegistry()
+        self.agentObserverAdapter = AgentObserverAdapter(eventBus: eventBus, diagnostics: diagnostics)
         self.calendarService = CalendarEventKitService(eventBus: eventBus, diagnostics: diagnostics)
         self.localhostService = LocalhostProbeService(eventBus: eventBus, diagnostics: diagnostics)
         self.habitsLearningService = HabitsLearningStoreService(
@@ -44,6 +49,9 @@ final class CoreRuntimeServices {
             diagnostics: diagnostics
         )
         self.notionSyncService = NotionSyncService(eventBus: eventBus, diagnostics: diagnostics)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        self.eventDecoder = decoder
         self.externalIntegrationsEnabled = integrationEnabled
         self.currentSnapshot = .phaseZero
         Self.shared = self
@@ -60,6 +68,8 @@ final class CoreRuntimeServices {
             message: "Core runtime services started.",
             source: "core.runtime"
         )
+        await registerAdaptersIfNeeded()
+        startEventSubscriptionIfNeeded()
         await adapterRegistry.startAll()
         await habitsLearningService.start()
         await refreshHabitsLearning()
@@ -75,11 +85,95 @@ final class CoreRuntimeServices {
             NotificationCenter.default.removeObserver(calendarStoreChangedObserver)
             self.calendarStoreChangedObserver = nil
         }
+        eventSubscriptionTask?.cancel()
+        eventSubscriptionTask = nil
         await adapterRegistry.stopAll()
         await diagnostics.record(
             level: .info,
             message: "Core runtime services stopped.",
             source: "core.runtime"
+        )
+    }
+
+    private func registerAdaptersIfNeeded() async {
+        guard !hasRegisteredAdapters else { return }
+        do {
+            try await adapterRegistry.register(agentObserverAdapter)
+            hasRegisteredAdapters = true
+        } catch {
+            await diagnostics.record(
+                level: .warning,
+                message: "Failed to register one or more adapters.",
+                source: "core.runtime",
+                metadata: ["error": String(describing: error)]
+            )
+        }
+    }
+
+    private func startEventSubscriptionIfNeeded() {
+        guard eventSubscriptionTask == nil else { return }
+
+        eventSubscriptionTask = Task { [weak self] in
+            guard let self else { return }
+            let subscription = await eventBus.subscribe()
+            for await event in subscription.stream {
+                await self.handleRuntimeEvent(event)
+            }
+        }
+    }
+
+    private func handleRuntimeEvent(_ event: NotchEvent) async {
+        guard event.source == "adapter.agents.observer" else { return }
+        guard case .text(let payload) = event.payload else { return }
+        guard let data = payload.data(using: .utf8) else { return }
+
+        do {
+            let decoded = try eventDecoder.decode(AgentObserverPayload.self, from: data)
+            let sessions = decoded.sessions.map(mapObservedAgentSession)
+            var nextSnapshot = currentSnapshot
+            nextSnapshot = nextSnapshot.updatingAgents(sessions)
+            currentSnapshot = nextSnapshot
+            shellSnapshotConsumer?(nextSnapshot)
+        } catch {
+            await diagnostics.record(
+                level: .warning,
+                message: "Failed to decode agent observer payload.",
+                source: "core.runtime",
+                metadata: ["error": String(describing: error)]
+            )
+        }
+    }
+
+    private func mapObservedAgentSession(_ session: ObservedAgentSession) -> ShellAgentSession {
+        let provider: ShellAgentProvider
+        switch session.provider {
+        case .codex:
+            provider = .codex
+        case .claudeCode:
+            provider = .claudeCode
+        }
+
+        let status: ShellAgentSessionStatus
+        switch session.status {
+        case .ongoing:
+            status = .ongoing
+        case .idle:
+            status = .idle
+        }
+
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        let lastActivityLabel = formatter.localizedString(for: session.lastActivityAt, relativeTo: Date())
+
+        return ShellAgentSession(
+            id: session.id,
+            provider: provider,
+            title: session.title,
+            workspacePath: session.workspacePath,
+            status: status,
+            confidence: session.confidence,
+            lastActivityAt: session.lastActivityAt,
+            lastActivityLabel: lastActivityLabel
         )
     }
 
@@ -227,6 +321,14 @@ final class CoreRuntimeServices {
             await refreshHabitsLearning()
         }
         return created
+    }
+
+    func reorderHabits(fromOffsets source: IndexSet, toOffset destination: Int) async -> Bool {
+        let reordered = await habitsLearningService.reorderHabits(fromOffsets: source, toOffset: destination)
+        if reordered {
+            await refreshHabitsLearning()
+        }
+        return reordered
     }
 
     func deleteHabit(id: String) async -> Bool {
@@ -887,11 +989,36 @@ private actor HabitsLearningStoreService {
         )
 
         cachedHabits.append(habit)
-        cachedHabits.sort {
-            $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
-        }
         await persistHabits()
         await publishMutationSignal(type: "habit", id: habit.id)
+        return true
+    }
+
+    func reorderHabits(fromOffsets source: IndexSet, toOffset destination: Int) async -> Bool {
+        guard !source.isEmpty else { return false }
+        guard source.allSatisfy({ $0 >= 0 && $0 < cachedHabits.count }) else { return false }
+
+        let movedHabits = source.map { cachedHabits[$0] }
+        var remainingHabits: [ShellHabitProgress] = []
+        remainingHabits.reserveCapacity(max(0, cachedHabits.count - source.count))
+
+        for (index, habit) in cachedHabits.enumerated() where !source.contains(index) {
+            remainingHabits.append(habit)
+        }
+
+        let clampedDestination = max(0, min(destination, cachedHabits.count))
+        let removedBeforeDestination = source.filter { $0 < clampedDestination }.count
+        let adjustedDestination = max(
+            0,
+            min(clampedDestination - removedBeforeDestination, remainingHabits.count)
+        )
+
+        remainingHabits.insert(contentsOf: movedHabits, at: adjustedDestination)
+        guard remainingHabits != cachedHabits else { return false }
+
+        cachedHabits = remainingHabits
+        await persistHabits()
+        await publishMutationSignal(type: "habit-reorder", id: movedHabits.first?.id ?? "none")
         return true
     }
 
@@ -1099,6 +1226,7 @@ private extension ShellStatusSnapshot {
             batteryPercentage: batteryPercentage,
             calendarEvents: events,
             localhostServices: localhostServices,
+            agentSessions: agentSessions,
             habits: habits,
             learningSignals: learningSignals
         )
@@ -1117,6 +1245,7 @@ private extension ShellStatusSnapshot {
             batteryPercentage: batteryPercentage,
             calendarEvents: calendarEvents,
             localhostServices: services,
+            agentSessions: agentSessions,
             habits: habits,
             learningSignals: learningSignals
         )
@@ -1136,8 +1265,26 @@ private extension ShellStatusSnapshot {
             batteryPercentage: batteryPercentage,
             calendarEvents: calendarEvents,
             localhostServices: localhostServices,
+            agentSessions: agentSessions,
             habits: habits,
             learningSignals: learnings
+        )
+    }
+
+    func updatingAgents(_ sessions: [ShellAgentSession]) -> ShellStatusSnapshot {
+        return ShellStatusSnapshot(
+            focusLabel: focusLabel,
+            nextEventLabel: nextEventLabel,
+            hostStatusLabel: hostStatusLabel,
+            openHighlights: openHighlights,
+            overview: overview,
+            statusIcons: statusIcons,
+            batteryPercentage: batteryPercentage,
+            calendarEvents: calendarEvents,
+            localhostServices: localhostServices,
+            agentSessions: sessions,
+            habits: habits,
+            learningSignals: learningSignals
         )
     }
 }

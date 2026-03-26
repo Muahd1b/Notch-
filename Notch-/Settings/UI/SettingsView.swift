@@ -1,6 +1,7 @@
 import EventKit
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 private enum SettingsTab: String, CaseIterable, Identifiable {
     case general = "General"
@@ -98,10 +99,9 @@ struct SettingsView: View {
         .toolbar(removing: .sidebarToggle)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button("Quit app") {
+                Button("Quit") {
                     NSApp.terminate(nil)
                 }
-                .controlSize(.extraLarge)
             }
         }
         .formStyle(.grouped)
@@ -707,6 +707,7 @@ private struct HabitsSettingsView: View {
     @State private var isMutating = false
     @State private var feedback: String?
     @State private var feedbackIsError = false
+    @State private var draggedHabitID: String?
 
     var body: some View {
         Form {
@@ -755,6 +756,8 @@ private struct HabitsSettingsView: View {
                 } else {
                     ForEach(habits) { habit in
                         HStack(spacing: 12) {
+                            Image(systemName: "line.3.horizontal")
+                                .foregroundStyle(.secondary)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(habit.title)
                                 Text("Daily target: \(max(1, habit.targetUnits))")
@@ -770,10 +773,27 @@ private struct HabitsSettingsView: View {
                             .buttonStyle(.borderless)
                             .disabled(isMutating)
                         }
+                        .contentShape(Rectangle())
+                        .onDrag {
+                            draggedHabitID = habit.id
+                            return NSItemProvider(object: NSString(string: habit.id))
+                        }
+                        .onDrop(
+                            of: [UTType.plainText],
+                            delegate: HabitsDropDelegate(
+                                targetHabitID: habit.id,
+                                habits: $habits,
+                                draggedHabitID: $draggedHabitID,
+                                onMove: moveHabits
+                            )
+                        )
                     }
                 }
             } header: {
                 Text("Current habits")
+            } footer: {
+                Text("Drag and drop habits to define the order used in settings and the shell.")
+                    .foregroundStyle(.secondary)
             }
 
             Section {
@@ -857,6 +877,26 @@ private struct HabitsSettingsView: View {
         }
     }
 
+    private func moveHabits(from source: IndexSet, to destination: Int) {
+        habits.move(fromOffsets: source, toOffset: destination)
+
+        Task {
+            guard let runtime = runtimeServices ?? CoreRuntimeServices.shared else {
+                feedback = "Habits runtime is unavailable."
+                feedbackIsError = true
+                await reloadHabits()
+                return
+            }
+
+            let reordered = await runtime.reorderHabits(fromOffsets: source, toOffset: destination)
+            if !reordered {
+                feedback = "Could not persist habits order."
+                feedbackIsError = true
+                await reloadHabits()
+            }
+        }
+    }
+
     private func deleteMockData() async {
         guard let runtime = runtimeServices ?? CoreRuntimeServices.shared else {
             feedback = "Habits runtime is unavailable."
@@ -877,6 +917,34 @@ private struct HabitsSettingsView: View {
             feedback = "No legacy mock data found."
             feedbackIsError = false
         }
+    }
+}
+
+private struct HabitsDropDelegate: DropDelegate {
+    let targetHabitID: String
+    @Binding var habits: [ShellHabitProgress]
+    @Binding var draggedHabitID: String?
+    let onMove: (IndexSet, Int) -> Void
+
+    func dropEntered(info: DropInfo) {
+        guard let draggedHabitID,
+              draggedHabitID != targetHabitID,
+              let fromIndex = habits.firstIndex(where: { $0.id == draggedHabitID }),
+              let targetIndex = habits.firstIndex(where: { $0.id == targetHabitID }) else {
+            return
+        }
+
+        let destination = targetIndex > fromIndex ? targetIndex + 1 : targetIndex
+        onMove(IndexSet(integer: fromIndex), destination)
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        draggedHabitID = nil
+        return true
     }
 }
 
