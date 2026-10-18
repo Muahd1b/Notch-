@@ -198,6 +198,7 @@ struct ShellLocalhostService: Equatable, Identifiable, Codable {
 enum ShellAgentProvider: String, Equatable, Hashable, Codable {
     case codex
     case claudeCode
+    case openClaw
 
     var title: String {
         switch self {
@@ -205,6 +206,8 @@ enum ShellAgentProvider: String, Equatable, Hashable, Codable {
             return "Codex"
         case .claudeCode:
             return "Claude"
+        case .openClaw:
+            return "OpenClaw"
         }
     }
 }

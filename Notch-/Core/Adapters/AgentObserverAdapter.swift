@@ -3,6 +3,7 @@ import Foundation
 enum ObservedAgentProvider: String, Codable, Sendable {
     case codex
     case claudeCode
+    case openClaw
 }
 
 enum ObservedAgentStatus: String, Codable, Sendable {
@@ -80,7 +81,14 @@ actor AgentObserverAdapter: NotchAdapter {
     func refresh() async {
         let codexEnabled = await MainActor.run { AppSettingsStore.shared.codexMonitoringEnabled }
         let claudeEnabled = await MainActor.run { AppSettingsStore.shared.claudeMonitoringEnabled }
-        let sessions = collectSessions(codexEnabled: codexEnabled, claudeEnabled: claudeEnabled)
+        let openClawEnabled = await MainActor.run { AppSettingsStore.shared.openClawMonitoringEnabled }
+        let showIdleAgents = await MainActor.run { AppSettingsStore.shared.showIdleAgents }
+        let sessions = collectSessions(
+            codexEnabled: codexEnabled,
+            claudeEnabled: claudeEnabled,
+            openClawEnabled: openClawEnabled,
+            showIdleAgents: showIdleAgents
+        )
         let now = Date()
         lastSyncAt = now
         health = .healthy
@@ -114,7 +122,12 @@ actor AgentObserverAdapter: NotchAdapter {
         }
     }
 
-    private func collectSessions(codexEnabled: Bool, claudeEnabled: Bool) -> [ObservedAgentSession] {
+    private func collectSessions(
+        codexEnabled: Bool,
+        claudeEnabled: Bool,
+        openClawEnabled: Bool,
+        showIdleAgents: Bool
+    ) -> [ObservedAgentSession] {
         var sessions: [ObservedAgentSession] = []
 
         if codexEnabled {
@@ -138,6 +151,23 @@ actor AgentObserverAdapter: NotchAdapter {
                     allowedExtensions: ["jsonl", "json"]
                 )
             )
+        }
+
+        if openClawEnabled {
+            sessions.append(
+                contentsOf: scanProvider(
+                    provider: .openClaw,
+                    rootPaths: [
+                        "\(NSHomeDirectory())/.openclaw",
+                        "\(NSHomeDirectory())/Library/Application Support/OpenClaw",
+                    ],
+                    allowedExtensions: ["jsonl", "json", "log"]
+                )
+            )
+        }
+
+        if !showIdleAgents {
+            sessions.removeAll { $0.status == .idle }
         }
 
         return Array(

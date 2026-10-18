@@ -123,6 +123,48 @@ struct CoreRuntimeServicesTests {
         #expect(persistedOrder == ["Language", "Sport", "Journal"])
         await reloadedRuntime.stop()
     }
+
+    @Test
+    func habitsDailyResetClearsProgressWhenBoundaryAdvances() async {
+        let suiteName = "CoreRuntimeServicesHabitsDailyResetTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName) ?? .standard
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.removeObject(forKey: "notch.store.habits")
+        defaults.removeObject(forKey: "notch.store.learnings")
+        defaults.removeObject(forKey: "notch.store.habits.lastDailyResetAnchor")
+
+        let settings = AppSettingsStore.shared
+        let previousResetHour = settings.habitsDailyResetHour
+        let previousMonitoring = (settings.codexMonitoringEnabled, settings.claudeMonitoringEnabled, settings.openClawMonitoringEnabled)
+        settings.habitsDailyResetHour = 4
+        settings.codexMonitoringEnabled = false
+        settings.claudeMonitoringEnabled = false
+        settings.openClawMonitoringEnabled = false
+        defer {
+            settings.habitsDailyResetHour = previousResetHour
+            (settings.codexMonitoringEnabled, settings.claudeMonitoringEnabled, settings.openClawMonitoringEnabled) = previousMonitoring
+        }
+
+        let runtime = CoreRuntimeServices(defaults: defaults, externalIntegrationsEnabled: false)
+        await runtime.start()
+
+        #expect(await runtime.createHabit(title: "Daily Reset Habit", targetUnits: 2))
+        guard let habitID = (await runtime.habitsForSettings()).first(where: { $0.title == "Daily Reset Habit" })?.id else {
+            Issue.record("Expected created habit to be available")
+            await runtime.stop()
+            return
+        }
+
+        await runtime.toggleHabitCompletion(id: habitID)
+        let progressBeforeReset = (await runtime.habitsForSettings()).first(where: { $0.id == habitID })?.completedUnits
+        #expect(progressBeforeReset == 1)
+
+        defaults.set(Date.distantPast, forKey: "notch.store.habits.lastDailyResetAnchor")
+        let progressAfterReset = (await runtime.habitsForSettings()).first(where: { $0.id == habitID })?.completedUnits
+        #expect(progressAfterReset == 0)
+
+        await runtime.stop()
+    }
 }
 
 @MainActor

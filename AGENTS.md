@@ -7,6 +7,8 @@
 
 ## Task references
 
+- Domain routing: read [domain.md](docs/agents/domain.md).
+
 - Code or adapter changes, reviews, or validation: read [CODING_STANDARDS.md](CODING_STANDARDS.md).
 - Product scope, implementation sequencing, research, or architecture: read only relevant documents listed in [agent-contract-legacy.md](docs/agents/agent-contract-legacy.md).
 
