@@ -5,6 +5,10 @@ command -v python3 >/dev/null 2>&1 || { echo 'Python 3 is required for the file-
 current=$(git config --get core.hooksPath || true)
 hook_dir="$(pwd -P)/.githooks"
 if [ -n "$current" ] && [ "$current" != '.githooks' ] && [ "$current" != "$hook_dir" ]; then
+    if [ -x "$current/pre-commit" ] && cmp -s "$current/pre-commit" .githooks/pre-commit; then
+        echo 'Staged file-size hook is already active through the shared hook directory.'
+        exit 0
+    fi
     echo "Existing core.hooksPath=$current; add the .githooks/pre-commit check to that hook instead of replacing it." >&2
     exit 1
 fi

@@ -1,10 +1,19 @@
 # Staged file-size check
 
-After cloning, run `sh .githooks/install.sh` (requires Git and Python 3).
-Git does not activate tracked hooks automatically. Run this setup in every
-development checkout, including cloud setup scripts. Existing hook managers
-must call `.githooks/pre-commit` before their other checks; the installer refuses
-to replace an existing hook.
+Hooks activate automatically for fresh clones on the managed Mac, cloud and
+Server 2 development accounts. Their Git profiles conditionally select
+`.githooks` for the registered repository remotes (HTTPS and SSH). No command
+is needed after cloning. Other repositories keep their existing Git behavior,
+and explicit local hook-manager settings retain precedence.
+
+The checked-in `.codex/environments/environment.toml` installs hooks when Codex
+creates a new worktree/environment. Infrastructure's setup also provisions the
+full managed Git profile through `scripts/install-development-git-hooks.py`;
+the cloud development-machine installer runs that provisioner too. Git and
+Python 3 are required. No dependency install or application build is added.
+
+`.githooks/install.sh` remains the idempotent environment bootstrap; matching
+shared hooks are accepted, and incompatible existing hooks are never replaced.
 The local Git config uses this checkout's absolute hook directory, so linked
 worktrees run the same check even on older branches. Keep that checkout available;
 after moving it, update `core.hooksPath` to its new `.githooks` directory.
