@@ -25,13 +25,18 @@ struct ShellFocusTimerPageView: View {
     }
 
     private func leftControlsColumn(compact: Bool) -> some View {
-        let focusRecords = viewModel.focusSessionRecords.filter { $0.phase == .focus }
-        let totalFocusMinutes = focusRecords.reduce(0) { $0 + max(0, $1.durationSeconds / 60) }
-
-        return VStack(alignment: .leading, spacing: compact ? 6 : 8) {
+        VStack(alignment: .leading, spacing: compact ? 6 : 8) {
             HStack(spacing: compact ? 6 : 8) {
-                metricCard(title: "Sessions", value: "\(focusRecords.count)", compact: compact)
-                metricCard(title: "Minutes", value: "\(totalFocusMinutes)", compact: compact)
+                metricCard(
+                    title: "Today",
+                    value: "\(viewModel.focusSessionsTodayCount) · \(viewModel.focusMinutesToday)m",
+                    compact: compact
+                )
+                metricCard(
+                    title: "All time",
+                    value: "\(viewModel.focusSessionsAllTimeCount) · \(viewModel.focusMinutesAllTime)m",
+                    compact: compact
+                )
             }
 
             Spacer(minLength: compact ? 4 : 6)

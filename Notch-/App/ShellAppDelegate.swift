@@ -68,6 +68,11 @@ final class ShellAppDelegate: NSObject, NSApplicationDelegate {
             }
         )
 
+        viewModel.configureFocusHistoryStore(coreRuntimeServices.focusSessionHistory)
+        Task {
+            await viewModel.restoreFocusHistory()
+        }
+
         SettingsWindowController.shared.configure(runtimeServices: coreRuntimeServices)
     }
 

@@ -81,15 +81,14 @@ Impact:
 
 - Page enable/disable/order controls are not centrally enforced.
 
-### 4. Focus data is not persisted
+### 4. Focus data is not persisted — resolved 2026-10-20
 
-- Focus sessions are in-memory (`ShellViewModel.focusSessionRecords`).
-- No persistence write/read path for focus session history.
+Status: resolved.
 
-Impact:
-
-- Focus history resets on app restart.
-- Cross-page analytics/longitudinal insights are blocked.
+- Focus session history now persists through `CoreRuntimeServices` into `PersistenceStore` under `notch.store.focusHistory`.
+- `ShellViewModel` restores persisted sessions on launch and appends each completed focus or break interval.
+- The Focus page now reports today and all-time session/minute metrics from the restored history.
+- Remaining focus work is cross-page analytics and optional history management from settings.
 
 ### 5. Localhost configuration is not user-defined
 
@@ -142,7 +141,7 @@ Notable examples:
 - HUD camera/screen-capture service tests.
 - Calendar quick-create and permission-transition edge-paths.
 - Localhost probe configuration and debounce behavior.
-- Focus persistence lifecycle tests (currently not possible due to missing persistence path).
+- Focus persistence lifecycle tests are now covered by `FocusSessionHistoryServiceTests` and the view-model restore test.
 - Placeholder-page replacement readiness tests (notifications/agents/openclaw/financial).
 - UI tests are limited to basic launch/settings/tab smoke paths.
 
@@ -154,7 +153,7 @@ Notable examples:
    - adapter -> event bus -> state composition -> shell snapshot.
 3. Implement next pages in order:
    - Notifications -> Agents -> OpenClaw -> Financial.
-4. Persist focus session history and wire analytics snapshots.
+4. Wire persisted focus history into cross-page analytics snapshots (persistence itself is complete).
 5. Replace hardcoded localhost probe definitions with settings-backed service registry.
 6. Expand test coverage for media/HUD/runtime permission/degraded modes.
 

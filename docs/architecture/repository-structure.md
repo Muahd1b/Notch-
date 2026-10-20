@@ -28,7 +28,7 @@ Shared runtime spine services introduced in early Phase 1:
 - `Permissions/`: permission state tracking and publication
 - `Diagnostics/`: runtime diagnostics buffering and event emission
 - `Pages/`: page registration and ordering
-- `Runtime/`: composition container for core services
+- `Runtime/`: composition container for core services and domain services under `Runtime/Services/`
 
 ### `Notch-/Shell/Core`
 
@@ -37,6 +37,8 @@ Pure shell state, geometry, sizing, display, and shell snapshot data.
 - shell state and open reasons
 - view model
 - notch geometry resolver
+- focus timer models, notification service, and session history protocol
+- focus summary extensions for today/all-time metrics
 - display selection helpers
 - haptics service
 - shell status snapshot used by current page UI
@@ -94,6 +96,7 @@ Phase 1 infrastructure tests:
 - runtime diagnostics buffering/events
 - page registration and ordering
 - runtime service startup wiring
+- focus session history persistence and view-model restoration
 
 ### `Notch-UITests/Shell`
 

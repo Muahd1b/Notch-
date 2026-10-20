@@ -12,6 +12,7 @@ final class CoreRuntimeServices {
     let adapterRegistry: AdapterRegistry
     let permissionsManager: PermissionsManager
     let pageRegistry: PageRegistry
+    let focusSessionHistory: FocusSessionHistoryService
     private let agentObserverAdapter: AgentObserverAdapter
     private let calendarService: CalendarEventKitService
     private let localhostService: LocalhostProbeService
@@ -40,6 +41,10 @@ final class CoreRuntimeServices {
         self.adapterRegistry = AdapterRegistry(eventBus: eventBus, diagnostics: diagnostics)
         self.permissionsManager = PermissionsManager(eventBus: eventBus)
         self.pageRegistry = PageRegistry()
+        self.focusSessionHistory = FocusSessionHistoryService(
+            persistenceStore: self.persistenceStore,
+            diagnostics: diagnostics
+        )
         self.agentObserverAdapter = AgentObserverAdapter(eventBus: eventBus, diagnostics: diagnostics)
         self.calendarService = CalendarEventKitService(eventBus: eventBus, diagnostics: diagnostics)
         self.localhostService = LocalhostProbeService(eventBus: eventBus, diagnostics: diagnostics)

@@ -1,6 +1,7 @@
 # Notch- Current Implementation State
 
 Date: March 26, 2026
+Last updated: October 20, 2026
 Status: Active
 
 ## Purpose
@@ -66,12 +67,13 @@ Implemented today:
 - HUD services now use AVFoundation capture sessions:
   - camera preview with mac camera preference and permission-aware fallback
   - full-display stream preview with screen-recording permission flow
+- persisted focus session history with daily and all-time focus metrics on the Focus page
 
 Not implemented yet:
 
 - production adapters/pages for notifications, OpenClaw, and financial board
 - richer agent monitoring beyond local observer heuristics (event hooks, task usage summaries, provider-specific drill-down)
-- persisted focus session history and cross-page focus analytics aggregation
+- richer cross-page focus analytics aggregation
 - detached utility windows for HUD stream workflows (current HUD stream is in-notch preview)
 - full `peek` behavior and deeper page-specific domain rendering for remaining placeholder pages
 - adapter-driven runtime ownership (most integrations are still service-direct via `CoreRuntimeServices`)
@@ -86,7 +88,7 @@ The latest full-codebase audit confirms these additional gaps as high priority:
 
 - placeholder pages remain in open-shell routing (`notifications`, `openclaw`, `financialBoard`)
 - `AdapterRegistry` and `PageRegistry` are tested but not used as runtime control planes
-- focus sessions remain in-memory only and do not survive app restart
+- cross-page focus analytics aggregation beyond the persisted session log
 - Notion integration currently verifies connectivity only; no habits/learnings sync model is active
 - media and HUD runtime behavior is implemented, but dedicated test coverage remains thin
 
@@ -108,6 +110,10 @@ The codebase is now organized around the working shell runtime instead of one fl
 - `Notch-/Shell/Core/ShellSizing.swift`
 - `Notch-/Shell/Core/ShellStatusSnapshot.swift`
 - `Notch-/Shell/Core/HapticsService.swift`
+- `Notch-/Shell/Core/FocusModels.swift`
+- `Notch-/Shell/Core/FocusNotificationService.swift`
+- `Notch-/Shell/Core/FocusSessionHistoryStoring.swift`
+- `Notch-/Shell/Core/ShellViewModel+FocusSummary.swift`
 
 ### Shell windowing
 
@@ -139,6 +145,7 @@ The codebase is now organized around the working shell runtime instead of one fl
 - `Notch-/Core/Diagnostics/RuntimeDiagnostics.swift`
 - `Notch-/Core/Pages/PageRegistry.swift`
 - `Notch-/Core/Runtime/CoreRuntimeServices.swift`
+- `Notch-/Core/Runtime/Services/FocusSessionHistoryService.swift`
 
 ### Test coverage currently present
 
@@ -149,6 +156,7 @@ The codebase is now organized around the working shell runtime instead of one fl
 - `Notch-Tests/Shell/Windowing/ShellWindowControllerTests.swift`
 - `Notch-Tests/Core/NotchEventBusTests.swift`
 - `Notch-Tests/Core/PersistenceStoreTests.swift`
+- `Notch-Tests/Core/FocusSessionHistoryServiceTests.swift`
 - `Notch-Tests/Core/AdapterRegistryTests.swift`
 - `Notch-Tests/Core/PermissionsManagerTests.swift`
 - `Notch-Tests/Core/RuntimeDiagnosticsTests.swift`

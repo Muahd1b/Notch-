@@ -129,6 +129,48 @@ struct ShellViewModelTests {
         #expect(viewModel.focusIsPaused == false)
         #expect(viewModel.focusTimerIsRunning == false)
     }
+
+    @Test
+    func restoreFocusHistoryLoadsPersistedSessions() async {
+        let record = FocusSessionRecord(
+            id: "persisted-focus",
+            phase: .focus,
+            durationSeconds: 25 * 60,
+            note: "Ship persisted focus history",
+            endedAt: Date()
+        )
+        let store = FocusHistoryStoreStub(records: [record])
+        let viewModel = ShellViewModel()
+
+        viewModel.configureFocusHistoryStore(store)
+        await viewModel.restoreFocusHistory()
+
+        #expect(viewModel.focusSessionRecords == [record])
+        #expect(viewModel.focusSessionsTodayCount == 1)
+        #expect(viewModel.focusMinutesToday == 25)
+        #expect(viewModel.focusSessionsAllTimeCount == 1)
+        #expect(viewModel.focusMinutesAllTime == 25)
+    }
+}
+
+private actor FocusHistoryStoreStub: FocusSessionHistoryStoring {
+    private var records: [FocusSessionRecord]
+
+    init(records: [FocusSessionRecord]) {
+        self.records = records
+    }
+
+    func loadHistory() async -> [FocusSessionRecord] {
+        records
+    }
+
+    func append(_ record: FocusSessionRecord) async {
+        records.insert(record, at: 0)
+    }
+
+    func clearHistory() async {
+        records = []
+    }
 }
 
 private actor HabitToggleRecorder {

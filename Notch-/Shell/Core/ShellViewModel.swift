@@ -1,34 +1,9 @@
 import Foundation
 import Combine
-import UserNotifications
-
-enum FocusTimerPhase: String, Equatable, Sendable {
-    case idle
-    case focus
-    case breakTime
-
-    var title: String {
-        switch self {
-        case .idle:
-            return "Idle"
-        case .focus:
-            return "Focus"
-        case .breakTime:
-            return "Break"
-        }
-    }
-}
-
-struct FocusSessionRecord: Identifiable, Equatable, Sendable {
-    let id: String
-    let phase: FocusTimerPhase
-    let durationSeconds: Int
-    let note: String
-    let endedAt: Date
-}
 
 @MainActor
 final class ShellViewModel: ObservableObject {
+    private static let maxFocusSessionRecords = 40
     private let defaultDisplayID = "__default__"
 
     @Published private(set) var presentationState: ShellPresentationState = .closed
@@ -49,6 +24,7 @@ final class ShellViewModel: ObservableObject {
     private let settingsStore: AppSettingsStore
     private let hapticsService: HapticsService?
     private let notificationService: FocusNotificationService
+    private var focusHistoryStore: FocusSessionHistoryStoring?
     private var onCalendarPageAppeared: (() async -> Void)?
     private var onCreateCalendarEvent: ((String) async -> Bool)?
     private var onCreateReminder: ((String) async -> Bool)?
@@ -175,6 +151,30 @@ final class ShellViewModel: ObservableObject {
 
     func updateStatusSnapshot(_ snapshot: ShellStatusSnapshot) {
         statusSnapshot = snapshot
+    }
+
+    func configureFocusHistoryStore(_ store: FocusSessionHistoryStoring?) {
+        focusHistoryStore = store
+    }
+
+    func restoreFocusHistory() async {
+        guard let focusHistoryStore else { return }
+        let stored = await focusHistoryStore.loadHistory()
+        guard !stored.isEmpty else { return }
+
+        var recordsByID: [String: FocusSessionRecord] = [:]
+        for record in stored {
+            recordsByID[record.id] = record
+        }
+        for record in focusSessionRecords {
+            recordsByID[record.id] = record
+        }
+
+        focusSessionRecords = Array(
+            recordsByID.values
+                .sorted(by: { $0.endedAt > $1.endedAt })
+                .prefix(Self.maxFocusSessionRecords)
+        )
     }
 
     private func setPresentationState(
@@ -436,12 +436,20 @@ final class ShellViewModel: ObservableObject {
             endedAt: Date()
         )
         focusSessionRecords.insert(record, at: 0)
-        if focusSessionRecords.count > 40 {
-            focusSessionRecords = Array(focusSessionRecords.prefix(40))
+        if focusSessionRecords.count > Self.maxFocusSessionRecords {
+            focusSessionRecords = Array(focusSessionRecords.prefix(Self.maxFocusSessionRecords))
         }
+        persistFocusSessionRecord(record)
         activeSessionNote = ""
         activeSessionStartedAt = nil
         activeSessionPlannedSeconds = 0
+    }
+
+    private func persistFocusSessionRecord(_ record: FocusSessionRecord) {
+        guard let focusHistoryStore else { return }
+        Task {
+            await focusHistoryStore.append(record)
+        }
     }
 
     private func resetFocusTimerState() {
@@ -463,48 +471,5 @@ final class ShellViewModel: ObservableObject {
             try? await Task.sleep(for: .milliseconds(140))
             self?.hapticsService?.play(.settle)
         }
-    }
-}
-
-@MainActor
-final class FocusNotificationService {
-    static let shared = FocusNotificationService()
-
-    private let center = UNUserNotificationCenter.current()
-
-    func postBoundaryNotification(title: String, body: String, enabled: Bool) {
-        guard enabled else { return }
-
-        center.getNotificationSettings { [weak self] settings in
-            guard let self else { return }
-            switch settings.authorizationStatus {
-            case .authorized, .provisional, .ephemeral:
-                self.enqueueNotification(title: title, body: body)
-            case .notDetermined:
-                self.center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
-                    if granted {
-                        self.enqueueNotification(title: title, body: body)
-                    }
-                }
-            case .denied:
-                break
-            @unknown default:
-                break
-            }
-        }
-    }
-
-    private func enqueueNotification(title: String, body: String) {
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        content.sound = .default
-
-        let request = UNNotificationRequest(
-            identifier: "focus-boundary-\(UUID().uuidString)",
-            content: content,
-            trigger: nil
-        )
-        center.add(request)
     }
 }
