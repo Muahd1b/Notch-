@@ -148,7 +148,10 @@ final class ShellWindowController: NSWindowController, ShellWindowControlling {
             in: screenGeometry
         )
 
-        window.setFrame(nextFrame, display: true, animate: animated)
+        // Always snap the window to the anchored frame. AppKit's animated setFrame
+        // interpolates origin and size together, so an interrupted open/close leaves
+        // the panel off-center; the visible spring comes from SwiftUI inside the panel.
+        window.setFrame(nextFrame, display: true, animate: false)
         updateTrackingRegion()
     }
 
