@@ -12,7 +12,7 @@ enum ShellOpenTab: String, CaseIterable, Equatable {
     case mediaControl
     case habits
     case agents
-    case openClaw
+    case ops
     case focusTimer
     case hud
     case localhost
@@ -32,8 +32,8 @@ enum ShellOpenTab: String, CaseIterable, Equatable {
             return "checkmark.circle.fill"
         case .agents:
             return "bolt.badge.clock"
-        case .openClaw:
-            return "pawprint.fill"
+        case .ops:
+            return "list.bullet.clipboard"
         case .focusTimer:
             return "timer"
         case .hud:
@@ -59,8 +59,8 @@ enum ShellOpenTab: String, CaseIterable, Equatable {
             return "shell-habits-tab"
         case .agents:
             return "shell-agents-tab"
-        case .openClaw:
-            return "shell-openclaw-tab"
+        case .ops:
+            return "shell-ops-tab"
         case .focusTimer:
             return "shell-focus-tab"
         case .hud:
@@ -74,7 +74,7 @@ enum ShellOpenTab: String, CaseIterable, Equatable {
 
     fileprivate var side: ShellOpenTabSide {
         switch self {
-        case .home, .notifications, .calendar, .mediaControl, .habits, .agents, .openClaw:
+        case .home, .notifications, .calendar, .mediaControl, .habits, .agents, .ops:
             return .left
         case .focusTimer, .hud, .localhost, .financialBoard:
             return .right

@@ -61,13 +61,9 @@ struct ShellOpenContentView: View {
         case .agents:
             ShellAgentsPageView(viewModel: viewModel, statusSnapshot: statusSnapshot)
             .accessibilityIdentifier("shell-agents-page")
-        case .openClaw:
-            ShellFeaturePlaceholderPageView(
-                title: "OpenClaw",
-                subtitle: "Chat panel plus runtime metrics",
-                metric: "MCP aware"
-            )
-            .accessibilityIdentifier("shell-openclaw-page")
+        case .ops:
+            ShellOpsPageView(viewModel: viewModel, statusSnapshot: statusSnapshot)
+            .accessibilityIdentifier("shell-ops-page")
         case .focusTimer:
             ShellFocusTimerPageView(viewModel: viewModel)
                 .accessibilityIdentifier("shell-focus-page")

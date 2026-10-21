@@ -14,6 +14,7 @@ final class CoreRuntimeServices {
     let pageRegistry: PageRegistry
     let focusSessionHistory: FocusSessionHistoryService
     private let agentObserverAdapter: AgentObserverAdapter
+    private let opsAdapter: OpsAdapter
     private let calendarService: CalendarEventKitService
     private let localhostService: LocalhostProbeService
     private let habitsLearningService: HabitsLearningStoreService
@@ -46,6 +47,7 @@ final class CoreRuntimeServices {
             diagnostics: diagnostics
         )
         self.agentObserverAdapter = AgentObserverAdapter(eventBus: eventBus, diagnostics: diagnostics)
+        self.opsAdapter = OpsAdapter(eventBus: eventBus, diagnostics: diagnostics)
         self.calendarService = CalendarEventKitService(eventBus: eventBus, diagnostics: diagnostics)
         self.localhostService = LocalhostProbeService(eventBus: eventBus, diagnostics: diagnostics)
         self.habitsLearningService = HabitsLearningStoreService(
@@ -104,6 +106,7 @@ final class CoreRuntimeServices {
         guard !hasRegisteredAdapters else { return }
         do {
             try await adapterRegistry.register(agentObserverAdapter)
+            try await adapterRegistry.register(opsAdapter)
             hasRegisteredAdapters = true
         } catch {
             await diagnostics.record(
@@ -128,7 +131,43 @@ final class CoreRuntimeServices {
     }
 
     private func handleRuntimeEvent(_ event: NotchEvent) async {
-        guard event.source == "adapter.agents.observer" else { return }
+        switch event.source {
+        case "adapter.agents.observer":
+            await handleAgentPayload(event)
+        case "adapter.ops.observer":
+            await handleOpsPayload(event)
+        default:
+            return
+        }
+    }
+
+    private func handleOpsPayload(_ event: NotchEvent) async {
+        guard case .text(let payload) = event.payload else { return }
+        guard let data = payload.data(using: .utf8) else { return }
+
+        do {
+            let decoded = try eventDecoder.decode(OpsObserverPayload.self, from: data)
+            let ops = ShellOpsSnapshot(
+                automations: decoded.automations,
+                needsYou: decoded.needsYou,
+                repos: decoded.repos,
+                updatedAt: decoded.updatedAt
+            )
+            var nextSnapshot = currentSnapshot
+            nextSnapshot.ops = ops
+            currentSnapshot = nextSnapshot
+            shellSnapshotConsumer?(nextSnapshot)
+        } catch {
+            await diagnostics.record(
+                level: .warning,
+                message: "Failed to decode ops payload.",
+                source: "core.runtime",
+                metadata: ["error": String(describing: error)]
+            )
+        }
+    }
+
+    private func handleAgentPayload(_ event: NotchEvent) async {
         guard case .text(let payload) = event.payload else { return }
         guard let data = payload.data(using: .utf8) else { return }
 
@@ -160,8 +199,6 @@ final class CoreRuntimeServices {
             provider = .openCode
         case .ollama:
             provider = .ollama
-        case .openClaw:
-            provider = .openClaw
         }
 
         let status: ShellAgentSessionStatus
@@ -404,81 +441,5 @@ final class CoreRuntimeServices {
                 continuation.resume(returning: app != nil && error == nil)
             }
         }
-    }
-}
-
-private extension ShellStatusSnapshot {
-    func updatingCalendar(_ events: [ShellCalendarEvent]) -> ShellStatusSnapshot {
-        let nextLabel = events.first.map { "\($0.title) \u{2022} \($0.timeLabel)" } ?? "No events scheduled"
-        return ShellStatusSnapshot(
-            focusLabel: focusLabel,
-            nextEventLabel: nextLabel,
-            hostStatusLabel: hostStatusLabel,
-            openHighlights: openHighlights,
-            overview: overview,
-            statusIcons: statusIcons,
-            batteryPercentage: batteryPercentage,
-            calendarEvents: events,
-            localhostServices: localhostServices,
-            agentSessions: agentSessions,
-            habits: habits,
-            learningSignals: learningSignals
-        )
-    }
-
-    func updatingLocalhost(_ services: [ShellLocalhostService]) -> ShellStatusSnapshot {
-        let healthy = services.filter { $0.status == .healthy }.count
-        let hostLabel = services.isEmpty ? "No hosts configured" : "\(healthy)/\(services.count) hosts up"
-        return ShellStatusSnapshot(
-            focusLabel: focusLabel,
-            nextEventLabel: nextEventLabel,
-            hostStatusLabel: hostLabel,
-            openHighlights: openHighlights,
-            overview: overview,
-            statusIcons: statusIcons,
-            batteryPercentage: batteryPercentage,
-            calendarEvents: calendarEvents,
-            localhostServices: services,
-            agentSessions: agentSessions,
-            habits: habits,
-            learningSignals: learningSignals
-        )
-    }
-
-    func updatingHabitsLearning(
-        habits: [ShellHabitProgress],
-        learnings: [ShellLearningSignal]
-    ) -> ShellStatusSnapshot {
-        return ShellStatusSnapshot(
-            focusLabel: focusLabel,
-            nextEventLabel: nextEventLabel,
-            hostStatusLabel: hostStatusLabel,
-            openHighlights: openHighlights,
-            overview: overview,
-            statusIcons: statusIcons,
-            batteryPercentage: batteryPercentage,
-            calendarEvents: calendarEvents,
-            localhostServices: localhostServices,
-            agentSessions: agentSessions,
-            habits: habits,
-            learningSignals: learnings
-        )
-    }
-
-    func updatingAgents(_ sessions: [ShellAgentSession]) -> ShellStatusSnapshot {
-        return ShellStatusSnapshot(
-            focusLabel: focusLabel,
-            nextEventLabel: nextEventLabel,
-            hostStatusLabel: hostStatusLabel,
-            openHighlights: openHighlights,
-            overview: overview,
-            statusIcons: statusIcons,
-            batteryPercentage: batteryPercentage,
-            calendarEvents: calendarEvents,
-            localhostServices: localhostServices,
-            agentSessions: sessions,
-            habits: habits,
-            learningSignals: learningSignals
-        )
     }
 }

@@ -13,6 +13,7 @@ struct ShellStatusSnapshot: Equatable {
     let agentSessions: [ShellAgentSession]
     let habits: [ShellHabitProgress]
     let learningSignals: [ShellLearningSignal]
+    var ops: ShellOpsSnapshot = .empty
 
     static let phaseZero = ShellStatusSnapshot(
         focusLabel: "25m focus",
@@ -200,7 +201,6 @@ enum ShellAgentProvider: String, Equatable, Hashable, Codable, CaseIterable {
     case claudeCode
     case openCode
     case ollama
-    case openClaw
 
     var title: String {
         switch self {
@@ -212,8 +212,6 @@ enum ShellAgentProvider: String, Equatable, Hashable, Codable, CaseIterable {
             return "OpenCode"
         case .ollama:
             return "Ollama"
-        case .openClaw:
-            return "OpenClaw"
         }
     }
 
@@ -227,8 +225,6 @@ enum ShellAgentProvider: String, Equatable, Hashable, Codable, CaseIterable {
             return "terminal"
         case .ollama:
             return "brain"
-        case .openClaw:
-            return "antenna.radiowaves.left.and.right"
         }
     }
 }

@@ -7,7 +7,7 @@ enum NotchPage: String, CaseIterable, Sendable, Codable {
     case mediaControl
     case habits
     case agents
-    case openclaw
+    case ops
     case focus
     case hud
     case localhost
