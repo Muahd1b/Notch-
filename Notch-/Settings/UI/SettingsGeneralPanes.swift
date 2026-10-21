@@ -121,21 +121,6 @@ struct AppearanceSettingsView: View {
 
 struct NotificationSettingsView: View {
     @ObservedObject var settings: AppSettingsStore
-    @ObservedObject private var inbox = TelegramInbox.shared
-    @State private var telegramTokenDraft = ""
-
-    private func saveTelegramToken() {
-        inbox.saveToken(telegramTokenDraft)
-        settings.telegramEnabled = true
-        Task { await TelegramClient.shared.restart() }
-    }
-
-    private func clearTelegramToken() {
-        inbox.saveToken("")
-        settings.telegramEnabled = false
-        telegramTokenDraft = ""
-        Task { await TelegramClient.shared.stop() }
-    }
 
     var body: some View {
         Form {
@@ -147,35 +132,6 @@ struct NotificationSettingsView: View {
                     .disabled(!settings.notificationsEnabled)
             } header: {
                 Text("Visibility")
-            }
-
-            Section {
-                Toggle("Telegram", isOn: $settings.telegramEnabled)
-                    .disabled(!settings.notificationsEnabled)
-                    .onChange(of: settings.telegramEnabled) { _, isOn in
-                        Task {
-                            if isOn { await TelegramClient.shared.start() }
-                            else { await TelegramClient.shared.stop() }
-                        }
-                    }
-                SecureField("Bot token", text: $telegramTokenDraft)
-                    .textFieldStyle(.roundedBorder)
-                    .disabled(!settings.notificationsEnabled)
-                HStack(spacing: 8) {
-                    Button("Save token") { saveTelegramToken() }
-                        .disabled(telegramTokenDraft.trimmingCharacters(in: .whitespaces).isEmpty)
-                    Button("Clear", role: .destructive) { clearTelegramToken() }
-                        .disabled(!inbox.hasToken)
-                    Spacer(minLength: 8)
-                    Text(inbox.status.label)
-                        .font(.caption)
-                        .foregroundStyle(inbox.status == .connected ? Color.green : .secondary)
-                }
-                Text("Create a bot with @BotFather, paste its token here, then send the bot a message. Only messages addressed to that bot reach this list.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } header: {
-                Text("Telegram")
             }
 
             Section {

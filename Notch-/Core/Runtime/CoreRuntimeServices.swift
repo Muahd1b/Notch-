@@ -80,9 +80,6 @@ final class CoreRuntimeServices {
         await adapterRegistry.startAll()
         await habitsLearningService.start(dailyResetHour: AppSettingsStore.shared.habitsDailyResetHour)
         await refreshHabitsLearning()
-        if externalIntegrationsEnabled, AppSettingsStore.shared.notificationsEnabled, AppSettingsStore.shared.telegramEnabled {
-            await TelegramClient.shared.start()
-        }
         if externalIntegrationsEnabled {
             configureCalendarStoreChangedObserverIfNeeded()
             await refreshCalendar()
@@ -97,7 +94,6 @@ final class CoreRuntimeServices {
         }
         eventSubscriptionTask?.cancel()
         eventSubscriptionTask = nil
-        await TelegramClient.shared.stop()
         await adapterRegistry.stopAll()
         await diagnostics.record(
             level: .info,

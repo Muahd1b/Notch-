@@ -48,9 +48,6 @@ struct ShellOpenContentView: View {
         case .habits:
             ShellHabitsPageView(viewModel: viewModel, statusSnapshot: statusSnapshot)
                 .accessibilityIdentifier("shell-habits-page")
-        case .notifications:
-            ShellNotificationsPageView(viewModel: viewModel)
-            .accessibilityIdentifier("shell-notifications-page")
         case .mediaControl:
             ShellMediaControlPageView(viewModel: viewModel)
             .accessibilityIdentifier("shell-media-control-page")

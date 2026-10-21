@@ -2,7 +2,6 @@ import Foundation
 
 enum NotchPage: String, CaseIterable, Sendable, Codable {
     case home
-    case notifications
     case calendar
     case mediaControl
     case habits

@@ -7,7 +7,6 @@ private enum ShellOpenTabSide {
 
 enum ShellOpenTab: String, CaseIterable, Equatable {
     case home
-    case notifications
     case calendar
     case mediaControl
     case habits
@@ -22,8 +21,6 @@ enum ShellOpenTab: String, CaseIterable, Equatable {
         switch self {
         case .home:
             return "house.fill"
-        case .notifications:
-            return "bell.fill"
         case .calendar:
             return "calendar"
         case .mediaControl:
@@ -49,8 +46,6 @@ enum ShellOpenTab: String, CaseIterable, Equatable {
         switch self {
         case .home:
             return "shell-home-tab"
-        case .notifications:
-            return "shell-notifications-tab"
         case .calendar:
             return "shell-calendar-tab"
         case .mediaControl:
@@ -74,7 +69,7 @@ enum ShellOpenTab: String, CaseIterable, Equatable {
 
     fileprivate var side: ShellOpenTabSide {
         switch self {
-        case .home, .notifications, .calendar, .mediaControl, .habits, .agents, .ops:
+        case .home, .calendar, .mediaControl, .habits, .agents, .ops:
             return .left
         case .focusTimer, .hud, .localhost, .financialBoard:
             return .right

@@ -38,7 +38,6 @@ final class AppSettingsStore: ObservableObject {
     @Published var dimShellWhenInactive: Bool { didSet { defaults.set(dimShellWhenInactive, forKey: AppSettingsKeys.dimShellWhenInactive) } }
     @Published var notificationsEnabled: Bool { didSet { defaults.set(notificationsEnabled, forKey: AppSettingsKeys.notificationsEnabled) } }
     @Published var notificationsClosedStateEnabled: Bool { didSet { defaults.set(notificationsClosedStateEnabled, forKey: AppSettingsKeys.notificationsClosedStateEnabled) } }
-    @Published var telegramEnabled: Bool { didSet { defaults.set(telegramEnabled, forKey: AppSettingsKeys.telegramEnabled) } }
     @Published var notificationsShowBadges: Bool { didSet { defaults.set(notificationsShowBadges, forKey: AppSettingsKeys.notificationsShowBadges) } }
 
     @Published var calendarEnabled: Bool { didSet { defaults.set(calendarEnabled, forKey: AppSettingsKeys.calendarEnabled) } }
@@ -125,7 +124,6 @@ final class AppSettingsStore: ObservableObject {
         dimShellWhenInactive = defaults.object(forKey: AppSettingsKeys.dimShellWhenInactive) as? Bool ?? true
         notificationsEnabled = defaults.object(forKey: AppSettingsKeys.notificationsEnabled) as? Bool ?? true
         notificationsClosedStateEnabled = defaults.object(forKey: AppSettingsKeys.notificationsClosedStateEnabled) as? Bool ?? true
-        telegramEnabled = defaults.object(forKey: AppSettingsKeys.telegramEnabled) as? Bool ?? false
         notificationsShowBadges = defaults.object(forKey: AppSettingsKeys.notificationsShowBadges) as? Bool ?? true
 
         calendarEnabled = defaults.object(forKey: AppSettingsKeys.calendarEnabled) as? Bool ?? true
