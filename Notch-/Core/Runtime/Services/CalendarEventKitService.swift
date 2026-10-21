@@ -261,7 +261,8 @@ actor CalendarEventKitService {
         case .writeOnly:
             return false
         case .notDetermined:
-            return await requestEventAccess()
+            // Never prompt at launch: permission is requested from Settings, in context.
+            return false
         case .denied, .restricted:
             return false
         @unknown default:
@@ -277,52 +278,13 @@ actor CalendarEventKitService {
         case .writeOnly:
             return true
         case .notDetermined:
-            return await requestReminderAccess()
+            // Never prompt at launch: permission is requested from Settings, in context.
+            return false
         case .denied, .restricted:
             return false
         @unknown default:
             return false
         }
-    }
-
-    private func requestEventAccess() async -> Bool {
-        if #available(macOS 14.0, *) {
-            return await withCheckedContinuation { continuation in
-                eventStore.requestFullAccessToEvents { granted, _ in
-                    continuation.resume(returning: granted)
-                }
-            }
-        }
-
-#if swift(>=5.9)
-        return await withCheckedContinuation { continuation in
-            eventStore.requestAccess(to: .event) { granted, _ in
-                continuation.resume(returning: granted)
-            }
-        }
-#else
-        return false
-#endif
-    }
-
-    private func requestReminderAccess() async -> Bool {
-        if #available(macOS 14.0, *) {
-            return await withCheckedContinuation { continuation in
-                eventStore.requestFullAccessToReminders { granted, _ in
-                    continuation.resume(returning: granted)
-                }
-            }
-        }
-
-#if swift(>=5.9)
-        return await withCheckedContinuation { continuation in
-            eventStore.requestAccess(to: .reminder) { granted, _ in
-                continuation.resume(returning: granted)
-            }
-        }
-#else
-        return false
-#endif
     }
 
     private func timeLabel(for event: EKEvent) -> String {
