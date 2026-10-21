@@ -25,7 +25,6 @@ struct AgentSettingsView: View {
                 Text("Queries the local Ollama runtime on port 11434.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Toggle("OpenClaw monitoring", isOn: $settings.openClawMonitoringEnabled)
                 Text("Best-effort workspace scan; lower confidence than the structured providers.")
                     .font(.caption)
                     .foregroundStyle(.secondary)

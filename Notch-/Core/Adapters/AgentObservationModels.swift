@@ -5,7 +5,6 @@ enum ObservedAgentProvider: String, Codable, Sendable, CaseIterable {
     case claudeCode
     case openCode
     case ollama
-    case openClaw
 
     var displayName: String {
         switch self {
@@ -13,7 +12,6 @@ enum ObservedAgentProvider: String, Codable, Sendable, CaseIterable {
         case .claudeCode: return "Claude"
         case .openCode: return "OpenCode"
         case .ollama: return "Ollama"
-        case .openClaw: return "OpenClaw"
         }
     }
 
@@ -23,7 +21,6 @@ enum ObservedAgentProvider: String, Codable, Sendable, CaseIterable {
         case .claudeCode: return "asterisk"
         case .openCode: return "terminal"
         case .ollama: return "brain"
-        case .openClaw: return "claw"
         }
     }
 
@@ -34,7 +31,6 @@ enum ObservedAgentProvider: String, Codable, Sendable, CaseIterable {
         case .claudeCode: return ["claude"]
         case .openCode: return ["opencode"]
         case .ollama: return ["ollama"]
-        case .openClaw: return ["openclaw"]
         }
     }
 }

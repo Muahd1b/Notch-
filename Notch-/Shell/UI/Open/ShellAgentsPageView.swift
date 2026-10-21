@@ -300,7 +300,6 @@ struct ShellAgentsPageView: View {
         case .claudeCode: return .orange
         case .openCode: return .teal
         case .ollama: return .purple
-        case .openClaw: return .pink
         }
     }
 }

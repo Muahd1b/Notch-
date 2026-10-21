@@ -64,7 +64,6 @@ final class AppSettingsStore: ObservableObject {
     @Published var claudeMonitoringEnabled: Bool { didSet { defaults.set(claudeMonitoringEnabled, forKey: AppSettingsKeys.claudeMonitoringEnabled) } }
     @Published var openCodeMonitoringEnabled: Bool { didSet { defaults.set(openCodeMonitoringEnabled, forKey: AppSettingsKeys.openCodeMonitoringEnabled) } }
     @Published var ollamaMonitoringEnabled: Bool { didSet { defaults.set(ollamaMonitoringEnabled, forKey: AppSettingsKeys.ollamaMonitoringEnabled) } }
-    @Published var openClawMonitoringEnabled: Bool { didSet { defaults.set(openClawMonitoringEnabled, forKey: AppSettingsKeys.openClawMonitoringEnabled) } }
     @Published var showIdleAgents: Bool { didSet { defaults.set(showIdleAgents, forKey: AppSettingsKeys.showIdleAgents) } }
     @Published var agentStatusInClosedState: Bool { didSet { defaults.set(agentStatusInClosedState, forKey: AppSettingsKeys.agentStatusInClosedState) } }
     @Published var agentRefreshInterval: Double { didSet { defaults.set(agentRefreshInterval, forKey: AppSettingsKeys.agentRefreshInterval) } }
@@ -147,7 +146,6 @@ final class AppSettingsStore: ObservableObject {
         claudeMonitoringEnabled = defaults.object(forKey: AppSettingsKeys.claudeMonitoringEnabled) as? Bool ?? true
         openCodeMonitoringEnabled = defaults.object(forKey: AppSettingsKeys.openCodeMonitoringEnabled) as? Bool ?? true
         ollamaMonitoringEnabled = defaults.object(forKey: AppSettingsKeys.ollamaMonitoringEnabled) as? Bool ?? true
-        openClawMonitoringEnabled = defaults.object(forKey: AppSettingsKeys.openClawMonitoringEnabled) as? Bool ?? false
         showIdleAgents = defaults.object(forKey: AppSettingsKeys.showIdleAgents) as? Bool ?? false
         agentStatusInClosedState = defaults.object(forKey: AppSettingsKeys.agentStatusInClosedState) as? Bool ?? true
         agentRefreshInterval = defaults.object(forKey: AppSettingsKeys.agentRefreshInterval) as? Double ?? 10

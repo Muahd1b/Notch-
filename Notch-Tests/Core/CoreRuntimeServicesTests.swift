@@ -135,14 +135,13 @@ struct CoreRuntimeServicesTests {
 
         let settings = AppSettingsStore.shared
         let previousResetHour = settings.habitsDailyResetHour
-        let previousMonitoring = (settings.codexMonitoringEnabled, settings.claudeMonitoringEnabled, settings.openClawMonitoringEnabled)
+        let previousMonitoring = (settings.codexMonitoringEnabled, settings.claudeMonitoringEnabled)
         settings.habitsDailyResetHour = 4
         settings.codexMonitoringEnabled = false
         settings.claudeMonitoringEnabled = false
-        settings.openClawMonitoringEnabled = false
         defer {
             settings.habitsDailyResetHour = previousResetHour
-            (settings.codexMonitoringEnabled, settings.claudeMonitoringEnabled, settings.openClawMonitoringEnabled) = previousMonitoring
+            (settings.codexMonitoringEnabled, settings.claudeMonitoringEnabled) = previousMonitoring
         }
 
         let runtime = CoreRuntimeServices(defaults: defaults, externalIntegrationsEnabled: false)

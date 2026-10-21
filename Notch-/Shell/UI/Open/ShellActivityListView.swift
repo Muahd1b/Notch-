@@ -3,7 +3,7 @@ import SwiftUI
 struct ShellActivityListView: View {
     private let rows: [(title: String, value: String)] = [
         ("Shell", "Home tab stays neutral until live modules arrive"),
-        ("Agents", "Codex, Claude, and OpenClaw settings shell ready"),
+        ("Agents", "Codex, Claude and OpenCode sessions ready"),
         ("Localhost", "Probe registry comes after shell parity"),
         ("Focus", "Scroll viewport keeps shell size stable"),
         ("State", "Open shell remains a fixed viewport"),

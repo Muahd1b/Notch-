@@ -59,7 +59,6 @@ actor AgentObserverAdapter: NotchAdapter {
                 claude: AppSettingsStore.shared.claudeMonitoringEnabled,
                 openCode: AppSettingsStore.shared.openCodeMonitoringEnabled,
                 ollama: AppSettingsStore.shared.ollamaMonitoringEnabled,
-                openClaw: AppSettingsStore.shared.openClawMonitoringEnabled,
                 showIdle: AppSettingsStore.shared.showIdleAgents
             )
         }
@@ -75,7 +74,7 @@ actor AgentObserverAdapter: NotchAdapter {
 
     // MARK: - Collection
 
-    private func collectSessions(settings: (codex: Bool, claude: Bool, openCode: Bool, ollama: Bool, openClaw: Bool, showIdle: Bool)) async -> [ObservedAgentSession] {
+    private func collectSessions(settings: (codex: Bool, claude: Bool, openCode: Bool, ollama: Bool, showIdle: Bool)) async -> [ObservedAgentSession] {
         let runningProviders = Self.runningProviderProcesses()
         var sessions: [ObservedAgentSession] = []
 
@@ -90,9 +89,6 @@ actor AgentObserverAdapter: NotchAdapter {
         }
         if settings.ollama {
             sessions.append(contentsOf: await AgentSessionScanner.ollamaSessions())
-        }
-        if settings.openClaw {
-            sessions.append(contentsOf: openClawSessions())
         }
 
         sessions = sessions.map { session in
@@ -119,34 +115,6 @@ actor AgentObserverAdapter: NotchAdapter {
         }
 
         return Array(sessions.sorted { $0.lastActivityAt > $1.lastActivityAt }.prefix(12))
-    }
-
-    private func openClawSessions() -> [ObservedAgentSession] {
-        let files = AgentSessionScanner.recentFiles(
-            roots: [
-                "\(NSHomeDirectory())/.openclaw",
-                "\(NSHomeDirectory())/Library/Application Support/OpenClaw",
-            ],
-            extensions: ["jsonl", "json", "log"],
-            limit: 3
-        )
-
-        return files.map { file in
-            ObservedAgentSession(
-                id: "openclaw-\(file.url.path)",
-                provider: .openClaw,
-                title: file.url.deletingPathExtension().lastPathComponent,
-                workspacePath: file.url.deletingLastPathComponent().path,
-                status: AgentSessionScanner.status(for: file.modifiedAt),
-                confidence: .low,
-                lastActivityAt: file.modifiedAt,
-                model: nil,
-                summary: nil,
-                tokensUsed: nil,
-                tokenLimit: nil,
-                planUsagePercent: nil
-            )
-        }
     }
 
     /// One `ps` sweep per refresh keeps process detection cheap and provider-agnostic.

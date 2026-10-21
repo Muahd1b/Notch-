@@ -9,7 +9,6 @@ enum AdapterKind: String, CaseIterable, Sendable, Codable {
     case agents
     case hud
     case localhost
-    case openclaw
     case financial
     case learning
     case focus
