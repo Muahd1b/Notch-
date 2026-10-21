@@ -20,9 +20,9 @@ struct ShellOpsPageView: View {
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 10) {
             needsYouColumn
-                .frame(width: 240, alignment: .topLeading)
+                .frame(width: 236, alignment: .topLeading)
             rightColumn
                 .frame(maxWidth: .infinity, alignment: .topLeading)
         }
@@ -32,7 +32,7 @@ struct ShellOpsPageView: View {
     // MARK: - Needs you
 
     private var needsYouColumn: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline) {
                 Text("Needs you")
                     .font(.headline)
@@ -45,11 +45,7 @@ struct ShellOpsPageView: View {
             .padding(.horizontal, 2)
 
             if ops.needsYou.isEmpty && failedAgents.isEmpty {
-                emptyState(
-                    symbol: "checkmark.seal",
-                    title: "Nothing blocked",
-                    detail: "No ack gates, no failed agent turns."
-                )
+                emptyState
             } else {
                 VStack(spacing: 4) {
                     ForEach(ops.needsYou) { item in
@@ -73,12 +69,29 @@ struct ShellOpsPageView: View {
         }
     }
 
+    private var emptyState: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Image(systemName: "checkmark.seal")
+                .font(.title3)
+                .foregroundStyle(.green.opacity(0.8))
+            Text("Nothing blocked")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.white.opacity(0.85))
+            Text("No ack gates, no failed agent turns.")
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.45))
+        }
+        .padding(9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
     private func attentionRow(symbol: String, title: String, detail: String, tint: Color) -> some View {
-        HStack(alignment: .top, spacing: 8) {
+        HStack(alignment: .top, spacing: 7) {
             Image(systemName: symbol)
-                .font(.caption)
+                .font(.caption2)
                 .foregroundStyle(tint)
-                .frame(width: 14)
+                .frame(width: 13)
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
                     .font(.caption.weight(.medium))
@@ -92,78 +105,84 @@ struct ShellOpsPageView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .padding(.vertical, 5)
         .background(tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
     }
 
-    // MARK: - Automations and repos
+    // MARK: - Repos and automations
 
     private var rightColumn: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            repoStrip
-            automationList
-        }
-    }
-
-    private var repoStrip: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            sectionHeader("Repos", trailing: ops.repos.isEmpty ? nil : "\(ops.repos.count) watched")
-            if ops.repos.isEmpty {
-                Text("Waiting for the first GitHub poll…")
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Repos")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.75))
+                Spacer(minLength: 6)
+                Text(ops.repos.isEmpty ? "polling…" : "\(ops.repos.count) watched")
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.4))
-            } else {
-                VStack(spacing: 2) {
-                    ForEach(ops.repos) { repo in
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(repoTint(repo))
-                                .frame(width: 6, height: 6)
-                            Text(repo.id)
-                                .font(.caption2.weight(.medium))
-                                .foregroundStyle(.white.opacity(0.85))
-                                .lineLimit(1)
-                            Spacer(minLength: 4)
-                            Text(repo.ciLabel)
-                                .font(.caption2.monospacedDigit())
-                                .foregroundStyle(.white.opacity(0.45))
-                            if repo.openPRs > 0 {
-                                Text("\(repo.openPRs) PR")
-                                    .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(Color.blue.opacity(0.9))
-                                    .padding(.horizontal, 5)
-                                    .padding(.vertical, 1)
-                                    .background(Color.blue.opacity(0.12), in: Capsule())
-                            }
-                        }
+            }
+
+            ForEach(ops.repos) { repo in
+                HStack(spacing: 7) {
+                    Circle()
+                        .fill(repoTint(repo))
+                        .frame(width: 5, height: 5)
+                    Text(repo.id)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .lineLimit(1)
+                    Spacer(minLength: 4)
+                    Text(repo.ciLabel)
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(repo.ciState == "failure" ? Color.red.opacity(0.9) : .white.opacity(0.45))
+                    if repo.openPRs > 0 {
+                        Text("\(repo.openPRs) PR")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(Color.blue.opacity(0.9))
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(Color.blue.opacity(0.12), in: Capsule())
                     }
                 }
             }
+
+            Divider()
+                .overlay(.white.opacity(0.08))
+                .padding(.vertical, 1)
+
+            automationSummary
         }
-        .padding(8)
+        .padding(9)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    private var automationList: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            sectionHeader(
-                "Automations",
-                trailing: "\(ops.automations.filter(\.isActive).count) active · \(ops.overdueCount) overdue"
-            )
+    private var automationSummary: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: 5) {
+                Text("Automations")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.75))
+                Spacer(minLength: 4)
+                Text("\(ops.automations.filter(\.isActive).count) active · \(ops.overdueCount) overdue")
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(ops.overdueCount > 0 ? Color.orange : .white.opacity(0.4))
+            }
 
             if flaggedAutomations.isEmpty {
                 Text("Nothing expired or stale.")
                     .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.4))
+                    .foregroundStyle(.white.opacity(0.35))
             } else {
-                ForEach(flaggedAutomations.prefix(3)) { automation in
-                    HStack(spacing: 6) {
+                ForEach(flaggedAutomations.prefix(2)) { automation in
+                    HStack(spacing: 5) {
                         Circle()
-                            .fill(automationTint(automation))
-                            .frame(width: 5, height: 5)
+                            .fill(automation.issue == .expired ? Color.red : Color.orange)
+                            .frame(width: 4, height: 4)
                         Text(automation.name)
                             .font(.caption2)
-                            .foregroundStyle(.white.opacity(0.8))
+                            .foregroundStyle(.white.opacity(0.7))
                             .lineLimit(1)
                         Spacer(minLength: 4)
                         Text(automation.issue == .expired ? "expired" : "stale")
@@ -172,50 +191,6 @@ struct ShellOpsPageView: View {
                     }
                 }
             }
-        }
-        .padding(8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
-    // MARK: - Bits
-
-    private func sectionHeader(_ title: String, trailing: String?) -> some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.white.opacity(0.75))
-            Spacer(minLength: 6)
-            if let trailing {
-                Text(trailing)
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.4))
-            }
-        }
-    }
-
-    private func emptyState(symbol: String, title: String, detail: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Image(systemName: symbol)
-                .font(.title3)
-                .foregroundStyle(.green.opacity(0.8))
-            Text(title)
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.white.opacity(0.85))
-            Text(detail)
-                .font(.caption2)
-                .foregroundStyle(.white.opacity(0.45))
-        }
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
-    private func automationTint(_ automation: ShellAutomation) -> Color {
-        switch automation.issue {
-        case .expired: return .red
-        case .stale: return .orange
-        case nil: return automation.isActive ? .green.opacity(0.85) : .white.opacity(0.25)
         }
     }
 

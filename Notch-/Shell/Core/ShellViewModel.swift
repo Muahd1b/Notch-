@@ -50,11 +50,6 @@ final class ShellViewModel: ObservableObject {
         self.presentationState = initialPresentationState
         self.closedNotchSize = closedNotchSize
         self.selectedOpenTab = .home
-        if settingsStore.rememberLastTab,
-           let raw = UserDefaults.standard.string(forKey: AppSettingsKeys.lastOpenTab),
-           let restored = ShellOpenTab(rawValue: raw) {
-            self.selectedOpenTab = restored
-        }
         self.settingsStore = settingsStore
         self.hapticsService = hapticsService
         self.notificationService = notificationService
@@ -215,9 +210,6 @@ final class ShellViewModel: ObservableObject {
     func selectOpenTab(_ tab: ShellOpenTab) {
         guard selectedOpenTab != tab else { return }
         selectedOpenTab = tab
-        if settingsStore.rememberLastTab {
-            UserDefaults.standard.set(tab.rawValue, forKey: AppSettingsKeys.lastOpenTab)
-        }
         hapticsService?.play(.selection)
     }
 

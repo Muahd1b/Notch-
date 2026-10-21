@@ -40,7 +40,6 @@ enum AppSettingsKeys {
     static let openNotchOnHover = "notch.openNotchOnHover"
     static let enableHaptics = "notch.enableHaptics"
     static let rememberLastTab = "notch.rememberLastTab"
-    static let lastOpenTab = "notch.lastOpenTab"
     static let hoverDelay = "notch.hoverDelay"
     static let settingsIconInSymbolBar = "notch.settingsIconInSymbolBar"
     static let useGlassHighlighting = "notch.useGlassHighlighting"

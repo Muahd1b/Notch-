@@ -3,7 +3,6 @@ import Foundation
 /// Local-only readers for the operator signals: Codex automations, orchestration ack gates,
 /// and (through `gh`) repository health. Everything here is bounded and side-effect free.
 enum OpsScanner {
-    private static let maxScannedDirectories = 20_000
 
     // MARK: - Automations
 
@@ -150,66 +149,70 @@ enum OpsScanner {
         searchRoots: [String] = ["\(NSHomeDirectory())/Businesses"],
         now: Date = Date()
     ) -> [ShellNeedsYouItem] {
+        var items: [ShellNeedsYouItem] = []
+        var seenRunIDs = Set<String>()
+
+        for stateURL in orchestrationStateFiles(searchRoots: searchRoots) {
+            guard
+                let text = try? String(contentsOf: stateURL, encoding: .utf8),
+                parseYAMLScalar("phase", in: text) == "awaiting_ack"
+            else { continue }
+
+            let runID = parseYAMLScalar("run_id", in: text) ?? stateURL.deletingLastPathComponent().lastPathComponent
+            let risk = parseYAMLScalar("risk_level", in: text) ?? "unknown"
+            let remaining = parseYAMLScalar("acks_remaining", in: text) ?? "execute"
+            let issue = parseYAMLScalar("issue_id", in: text)
+            let createdAt = parseYAMLScalar("created_at", in: text).flatMap(parseISODate) ?? now
+            // The same run can be mirrored into cache/worktree copies of the repo.
+            guard seenRunIDs.insert(runID).inserted else { continue }
+
+            items.append(
+                ShellNeedsYouItem(
+                    id: "ack-\(runID)",
+                    kind: .ack,
+                    title: issue ?? runID,
+                    detail: "\(risk) risk · waiting for \(remaining) ack",
+                    createdAt: createdAt
+                )
+            )
+        }
+
+        return items.sorted { $0.createdAt > $1.createdAt }
+    }
+
+    /// `find` finds the handful of `.orchestration` directories without walking every `node_modules`
+    /// in the tree; enumerating `~/Businesses` directly hits a 20k-entry wall long before it reaches them.
+    private static func orchestrationStateFiles(searchRoots: [String]) -> [URL] {
+        var stateFiles: [URL] = []
         let fileManager = FileManager.default
 
-        for root in searchRoots {
-            guard fileManager.fileExists(atPath: root) else { continue }
-            guard let enumerator = fileManager.enumerator(
-                at: URL(fileURLWithPath: root, isDirectory: true),
-                includingPropertiesForKeys: [.isRegularFileKey, .isDirectoryKey],
-                options: [.skipsPackageDescendants]
-            ) else { continue }
+        for root in searchRoots where fileManager.fileExists(atPath: root) {
+            let output = ShellCommand.run("/usr/bin/find", [
+                root,
+                "-maxdepth", "8",
+                "-type", "d", "-name", "node_modules", "-prune",
+                "-o", "-type", "d", "-name", ".orchestration", "-print",
+            ]) ?? ""
 
-            let rootDepth = URL(fileURLWithPath: root).pathComponents.count
-            var scanned = 0
-            var items: [ShellNeedsYouItem] = []
+            for line in output.split(separator: "\n") {
+                let orchestrationDir = URL(fileURLWithPath: String(line), isDirectory: true)
+                let runsDir = orchestrationDir.appendingPathComponent("runs", isDirectory: true)
+                guard let runs = try? fileManager.contentsOfDirectory(
+                    at: runsDir,
+                    includingPropertiesForKeys: [.isDirectoryKey],
+                    options: [.skipsHiddenFiles]
+                ) else { continue }
 
-            for case let url as URL in enumerator {
-                scanned += 1
-                if scanned > maxScannedDirectories { break }
-
-                let depth = url.pathComponents.count - rootDepth
-                if depth > 9 {
-                    enumerator.skipDescendants()
-                    continue
+                for run in runs {
+                    let state = run.appendingPathComponent("state.yaml")
+                    if fileManager.fileExists(atPath: state.path) {
+                        stateFiles.append(state)
+                    }
                 }
-                if ["node_modules", ".git", "dist", "build", ".next"].contains(url.lastPathComponent) {
-                    enumerator.skipDescendants()
-                    continue
-                }
-
-                guard url.lastPathComponent == "state.yaml" else { continue }
-                let components = url.pathComponents
-                guard components.contains(".orchestration"), components.contains("runs") else { continue }
-
-                guard
-                    let text = try? String(contentsOf: url, encoding: .utf8),
-                    let phase = parseYAMLScalar("phase", in: text),
-                    phase == "awaiting_ack"
-                else { continue }
-
-                let runID = parseYAMLScalar("run_id", in: text) ?? url.deletingLastPathComponent().lastPathComponent
-                let risk = parseYAMLScalar("risk_level", in: text) ?? "unknown"
-                let remaining = parseYAMLScalar("acks_remaining", in: text) ?? "execute"
-                let issue = parseYAMLScalar("issue_id", in: text)
-                let createdAt = parseYAMLScalar("created_at", in: text).flatMap(parseISODate) ?? now
-
-                items.append(
-                    ShellNeedsYouItem(
-                        id: "ack-\(runID)",
-                        kind: .ack,
-                        title: issue ?? runID,
-                        detail: "\(risk) risk · waiting for \(remaining) ack",
-                        createdAt: createdAt
-                    )
-                )
-            }
-
-            if !items.isEmpty {
-                return items.sorted { $0.createdAt > $1.createdAt }
             }
         }
-        return []
+
+        return stateFiles
     }
 
     static func parseYAMLScalar(_ key: String, in text: String) -> String? {
