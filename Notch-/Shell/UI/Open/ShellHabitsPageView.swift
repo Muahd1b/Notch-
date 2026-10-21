@@ -33,18 +33,27 @@ struct ShellHabitsPageView: View {
 
     private var habitsColumn: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Today's Habits")
-                .font(.system(size: 12.5, weight: .semibold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.95))
+            HStack(alignment: .firstTextBaseline) {
+                Text("Today's Habits")
+                    .font(.system(size: 12.5, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.95))
+                Spacer(minLength: 8)
+                if !statusSnapshot.habits.isEmpty {
+                    Text("\(completedHabits) of \(statusSnapshot.habits.count) done")
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.5))
+                }
+            }
 
             if statusSnapshot.habits.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("No habits yet")
                         .font(.system(size: 14, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
-                    Text("Create habits in Settings > Habits.")
+                    Text("Add your first habit in Settings › Habits. It will appear here with a daily reset.")
                         .font(.system(size: 11, weight: .medium, design: .rounded))
                         .foregroundStyle(.white.opacity(0.62))
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .padding(14)

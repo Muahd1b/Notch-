@@ -101,15 +101,56 @@ struct ShellFocusTimerPageView: View {
                             .font(.system(size: compact ? 11 : 12, weight: .medium, design: .rounded))
                             .foregroundStyle(.white.opacity(0.52))
                     }
+
+                    Spacer(minLength: 6)
+
+                    if viewModel.focusCurrentStreak > 0 {
+                        Label("\(viewModel.focusCurrentStreak)d streak", systemImage: "flame.fill")
+                            .font(.system(size: compact ? 10 : 11, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.orange.opacity(0.9))
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                Spacer(minLength: 0)
+                Spacer(minLength: compact ? 4 : 6)
+
+                focusHistoryStrip(compact: compact)
             }
             .padding(.horizontal, compact ? 12 : 14)
             .padding(.vertical, compact ? 8 : 10)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+
+    private func focusHistoryStrip(compact: Bool) -> some View {
+        let days = viewModel.focusLastSevenDays
+        let peak = max(days.map(\.minutes).max() ?? 0, 1)
+
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .bottom, spacing: compact ? 5 : 7) {
+                ForEach(days) { day in
+                    let isToday = Calendar.current.isDateInToday(day.date)
+                    VStack(spacing: 3) {
+                        RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+                            .fill(.white.opacity(day.minutes == 0 ? 0.1 : (isToday ? 0.92 : 0.45)))
+                            .frame(height: max(3, 20 * CGFloat(day.minutes) / CGFloat(peak)))
+                            .frame(maxWidth: .infinity, alignment: .bottom)
+
+                        Text(day.date.formatted(.dateTime.weekday(.narrow)))
+                            .font(.system(size: 8, weight: isToday ? .bold : .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(isToday ? 0.8 : 0.4))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .help("\(day.minutes) min")
+                }
+            }
+            .frame(height: compact ? 30 : 34, alignment: .bottom)
+
+            Text(viewModel.lastFocusSessionLabel.map { "Last session \($0)" } ?? "No focus sessions yet")
+                .font(.system(size: 9, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.45))
+                .lineLimit(1)
         }
     }
 
