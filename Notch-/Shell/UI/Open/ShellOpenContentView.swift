@@ -49,11 +49,7 @@ struct ShellOpenContentView: View {
             ShellHabitsPageView(viewModel: viewModel, statusSnapshot: statusSnapshot)
                 .accessibilityIdentifier("shell-habits-page")
         case .notifications:
-            ShellFeaturePlaceholderPageView(
-                title: "Notifications",
-                subtitle: "WhatsApp, Discord, Instagram, Telegram",
-                metric: "4 sources"
-            )
+            ShellNotificationsPageView(viewModel: viewModel)
             .accessibilityIdentifier("shell-notifications-page")
         case .mediaControl:
             ShellMediaControlPageView(viewModel: viewModel)

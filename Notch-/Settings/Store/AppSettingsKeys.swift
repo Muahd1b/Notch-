@@ -46,6 +46,7 @@ enum AppSettingsKeys {
     static let dimShellWhenInactive = "notch.dimShellWhenInactive"
     static let notificationsEnabled = "notch.notificationsEnabled"
     static let notificationsClosedStateEnabled = "notch.notificationsClosedStateEnabled"
+    static let telegramEnabled = "notch.telegramEnabled"
     static let notificationsShowBadges = "notch.notificationsShowBadges"
 
     static let calendarEnabled = "notch.calendarEnabled"
