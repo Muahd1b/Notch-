@@ -156,6 +156,10 @@ final class CoreRuntimeServices {
             provider = .codex
         case .claudeCode:
             provider = .claudeCode
+        case .openCode:
+            provider = .openCode
+        case .ollama:
+            provider = .ollama
         case .openClaw:
             provider = .openClaw
         }
@@ -180,7 +184,11 @@ final class CoreRuntimeServices {
             status: status,
             confidence: session.confidence,
             lastActivityAt: session.lastActivityAt,
-            lastActivityLabel: lastActivityLabel
+            lastActivityLabel: lastActivityLabel,
+            model: session.model,
+            summary: session.summary,
+            tokensUsed: session.tokensUsed,
+            tokenLimit: session.tokenLimit
         )
     }
 

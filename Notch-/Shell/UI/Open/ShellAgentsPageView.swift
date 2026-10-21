@@ -1,7 +1,4 @@
 import AppKit
-import AVFoundation
-import Combine
-import CoreGraphics
 import SwiftUI
 
 @MainActor
@@ -10,99 +7,58 @@ struct ShellAgentsPageView: View {
     let statusSnapshot: ShellStatusSnapshot
 
     @State private var selectedSessionID: String?
+    @State private var copiedPath = false
+
+    private var sessions: [ShellAgentSession] {
+        statusSnapshot.agentSessions
+    }
+
+    private var selectedSession: ShellAgentSession? {
+        sessions.first { $0.id == selectedSessionID } ?? sessions.first
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             sessionsColumn
-                .frame(width: 292, alignment: .topLeading)
+                .frame(width: 288, alignment: .topLeading)
 
             detailColumn
                 .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .onAppear {
-            if selectedSessionID == nil {
-                selectedSessionID = statusSnapshot.agentSessions.first?.id
-            }
-        }
-        .onChange(of: statusSnapshot.agentSessions.map(\.id)) { _, _ in
-            guard let selectedSessionID else {
-                self.selectedSessionID = statusSnapshot.agentSessions.first?.id
-                return
-            }
-            if !statusSnapshot.agentSessions.contains(where: { $0.id == selectedSessionID }) {
-                self.selectedSessionID = statusSnapshot.agentSessions.first?.id
-            }
+        .onAppear { syncSelection() }
+        .onChange(of: sessions.map(\.id)) { _, _ in syncSelection() }
+    }
+
+    private func syncSelection() {
+        guard let current = selectedSessionID, sessions.contains(where: { $0.id == current }) else {
+            selectedSessionID = sessions.first?.id
+            return
         }
     }
 
+    // MARK: - List
+
     private var sessionsColumn: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Agent Sessions")
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.95))
+            HStack(alignment: .firstTextBaseline) {
+                Text("Agents")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                Spacer(minLength: 8)
+                Text("\(sessions.filter { $0.status == .ongoing }.count) active")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.55))
+            }
+            .padding(.horizontal, 2)
 
-            if statusSnapshot.agentSessions.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("No active observers")
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white)
-                    Text("Enable Codex or Claude monitoring in Settings > Agents.")
-                        .font(.system(size: 10.5, weight: .medium, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.62))
-                }
-                .frame(maxWidth: .infinity, alignment: .topLeading)
-                .padding(11)
-                .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+            if sessions.isEmpty {
+                emptyState
             } else {
                 ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        ForEach(statusSnapshot.agentSessions) { session in
-                            Button {
-                                selectedSessionID = session.id
-                                viewModel.playSelectionHaptic()
-                            } label: {
-                                HStack(alignment: .top, spacing: 7) {
-                                    Circle()
-                                        .fill(statusColor(session.status))
-                                        .frame(width: 7, height: 7)
-                                        .padding(.top, 3)
-
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        HStack(spacing: 6) {
-                                            Text(session.provider.title)
-                                                .font(.system(size: 10, weight: .bold, design: .rounded))
-                                                .foregroundStyle(.white.opacity(0.74))
-                                                .padding(.horizontal, 5)
-                                                .padding(.vertical, 2)
-                                                .background(providerColor(session.provider).opacity(0.35), in: Capsule())
-
-                                            Text(session.status == .ongoing ? "ONGOING" : "IDLE")
-                                                .font(.system(size: 9, weight: .bold, design: .rounded))
-                                                .foregroundStyle(.white.opacity(0.65))
-                                        }
-
-                                        Text(session.title)
-                                            .font(.system(size: 11.5, weight: .semibold, design: .rounded))
-                                            .foregroundStyle(.white)
-                                            .lineLimit(1)
-
-                                        Text(session.lastActivityLabel)
-                                            .font(.system(size: 9.5, weight: .medium, design: .rounded))
-                                            .foregroundStyle(.white.opacity(0.58))
-                                            .lineLimit(1)
-                                    }
-
-                                    Spacer(minLength: 0)
-                                }
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 8)
-                                .background(
-                                    (selectedSessionID == session.id ? .white.opacity(0.11) : .white.opacity(0.05)),
-                                    in: RoundedRectangle(cornerRadius: 11, style: .continuous)
-                                )
-                            }
-                            .buttonStyle(.plain)
+                    VStack(spacing: 4) {
+                        ForEach(sessions) { session in
+                            sessionRow(session)
                         }
                     }
                 }
@@ -110,104 +66,296 @@ struct ShellAgentsPageView: View {
         }
     }
 
-    private var detailColumn: some View {
-        let selected = statusSnapshot.agentSessions.first(where: { $0.id == selectedSessionID }) ?? statusSnapshot.agentSessions.first
-        let ongoingCount = statusSnapshot.agentSessions.filter { $0.status == .ongoing }.count
-        let idleCount = statusSnapshot.agentSessions.filter { $0.status == .idle }.count
-        let providerCount = Set(statusSnapshot.agentSessions.map(\.provider)).count
+    private var emptyState: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("No agent activity", systemImage: "moon.zzz")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white)
+            Text("Sessions appear here when Codex, Claude Code, OpenCode or Ollama are running. Enable or disable providers in Settings › Agents.")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.6))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
 
-        return VStack(alignment: .leading, spacing: 8) {
-            Text("Agent Overview")
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.95))
+    private func sessionRow(_ session: ShellAgentSession) -> some View {
+        let isSelected = session.id == selectedSession?.id
 
-            HStack(spacing: 8) {
-                metricCard(title: "Ongoing", value: "\(ongoingCount)")
-                metricCard(title: "Idle", value: "\(idleCount)")
-                metricCard(title: "Providers", value: "\(providerCount)")
-            }
+        return Button {
+            selectedSessionID = session.id
+            viewModel.playSelectionHaptic()
+        } label: {
+            HStack(alignment: .top, spacing: 9) {
+                Image(systemName: session.provider.symbolName)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(providerTint(session.provider))
+                    .frame(width: 22, height: 22)
+                    .background(providerTint(session.provider).opacity(0.16), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
 
-            if let selected {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Text(selected.title)
-                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 5) {
+                        Text(session.title)
+                            .font(.subheadline.weight(.medium))
                             .foregroundStyle(.white)
                             .lineLimit(1)
-                        Spacer(minLength: 8)
-                        Text(selected.confidence.rawValue.uppercased())
-                            .font(.system(size: 9.5, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.72))
+                        Spacer(minLength: 4)
+                        StatusDot(status: session.status)
                     }
 
-                    Text(selected.workspacePath)
-                        .font(.system(size: 10, weight: .medium, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.58))
-                        .lineLimit(2)
+                    Text(session.summary ?? session.workspacePath)
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.55))
+                        .lineLimit(1)
 
                     HStack(spacing: 6) {
-                        Text(selected.provider.title)
-                            .font(.system(size: 10, weight: .semibold, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.82))
-                        Text("•")
-                            .foregroundStyle(.white.opacity(0.46))
-                        Text(selected.status == .ongoing ? "ongoing" : "idle")
-                            .font(.system(size: 10, weight: .medium, design: .rounded))
-                            .foregroundStyle(statusColor(selected.status))
-                        Text("•")
-                            .foregroundStyle(.white.opacity(0.46))
-                        Text(selected.lastActivityLabel)
-                            .font(.system(size: 10, weight: .medium, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.64))
+                        Text(session.provider.title)
+                        if let model = session.model {
+                            Text("·")
+                            Text(model).lineLimit(1)
+                        }
+                        Spacer(minLength: 4)
+                        Text(session.lastActivityLabel)
                     }
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.42))
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 9)
-                .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(.white.opacity(isSelected ? 0.12 : 0.045))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(.white.opacity(isSelected ? 0.14 : 0), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Detail
+
+    private var detailColumn: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            header
+            metricsRow
+
+            if let selectedSession {
+                detailCard(selectedSession)
             } else {
-                Text("Waiting for agent activity.")
-                    .font(.system(size: 10.5, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.58))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
+                Text("Select a session to see workspace, model and token usage.")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.55))
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                    .padding(12)
+                    .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
         }
     }
 
-    private func providerColor(_ provider: ShellAgentProvider) -> Color {
-        switch provider {
-        case .codex:
-            return .blue
-        case .claudeCode:
-            return .orange
-        case .openClaw:
-            return .purple
-        }
-    }
-
-    private func statusColor(_ status: ShellAgentSessionStatus) -> Color {
-        switch status {
-        case .ongoing:
-            return .green
-        case .idle:
-            return .white.opacity(0.56)
-        }
-    }
-
-    private func metricCard(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(title)
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.62))
-            Text(value)
-                .font(.system(size: 14, weight: .bold, design: .rounded))
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text("Overview")
+                .font(.headline)
                 .foregroundStyle(.white)
+            Spacer(minLength: 8)
+            if let latest = sessions.first {
+                Text("Updated \(latest.lastActivityLabel)")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.5))
+            }
+        }
+        .padding(.horizontal, 2)
+    }
+
+    private var metricsRow: some View {
+        HStack(spacing: 8) {
+            MetricTile(
+                title: "Ongoing",
+                value: "\(sessions.filter { $0.status == .ongoing }.count)",
+                tint: .green
+            )
+            MetricTile(
+                title: "Idle",
+                value: "\(sessions.filter { $0.status == .idle }.count)",
+                tint: .white.opacity(0.45)
+            )
+            MetricTile(
+                title: "Providers",
+                value: "\(Set(sessions.map(\.provider)).count)",
+                tint: .blue
+            )
+        }
+    }
+
+    private func detailCard(_ session: ShellAgentSession) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(session.title)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                StatusPill(status: session.status)
+            }
+
+            if let summary = session.summary {
+                Text(summary)
+                    .font(.callout)
+                    .foregroundStyle(.white.opacity(0.75))
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            pathRow(session)
+            usageSection(session)
+
+            HStack(spacing: 6) {
+                Image(systemName: "gauge.with.dots.needle.33percent")
+                Text("\(session.confidence.rawValue) confidence")
+                Spacer(minLength: 4)
+                Text(session.provider.title)
+            }
+            .font(.caption2)
+            .foregroundStyle(.white.opacity(0.45))
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func pathRow(_ session: ShellAgentSession) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "folder")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.45))
+            Text(session.workspacePath)
+                .font(.caption.monospaced())
+                .foregroundStyle(.white.opacity(0.6))
+                .lineLimit(1)
+                .truncationMode(.head)
+            Spacer(minLength: 4)
+            Button {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(session.workspacePath, forType: .string)
+                copiedPath = true
+                viewModel.playSelectionHaptic()
+                Task {
+                    try? await Task.sleep(for: .seconds(1.6))
+                    copiedPath = false
+                }
+            } label: {
+                Image(systemName: copiedPath ? "checkmark" : "doc.on.doc")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(copiedPath ? 0.9 : 0.5))
+            }
+            .buttonStyle(.plain)
+            .help("Copy workspace path")
+        }
+    }
+
+    private func usageSection(_ session: ShellAgentSession) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("Token usage")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.55))
+                Spacer(minLength: 4)
+                Text(session.usageLabel ?? "not reported")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.white.opacity(session.usageLabel == nil ? 0.4 : 0.72))
+            }
+
+            if let fraction = session.usageFraction {
+                UsageBar(fraction: fraction, tint: fraction > 0.85 ? .orange : providerTint(session.provider))
+            } else {
+                UsageBar(fraction: 0, tint: providerTint(session.provider), isPlaceholder: true)
+            }
+        }
+    }
+
+    private func providerTint(_ provider: ShellAgentProvider) -> Color {
+        switch provider {
+        case .codex: return .blue
+        case .claudeCode: return .orange
+        case .openCode: return .teal
+        case .ollama: return .purple
+        case .openClaw: return .pink
+        }
+    }
+}
+
+// MARK: - Building blocks
+
+private struct StatusDot: View {
+    let status: ShellAgentSessionStatus
+
+    var body: some View {
+        Circle()
+            .fill(status == .ongoing ? Color.green : Color.white.opacity(0.3))
+            .frame(width: 6, height: 6)
+            .accessibilityLabel(status == .ongoing ? "Ongoing" : "Idle")
+    }
+}
+
+private struct StatusPill: View {
+    let status: ShellAgentSessionStatus
+
+    var body: some View {
+        Text(status == .ongoing ? "Ongoing" : "Idle")
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(status == .ongoing ? Color.green : Color.white.opacity(0.6))
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(
+                (status == .ongoing ? Color.green : Color.white).opacity(0.12),
+                in: Capsule()
+            )
+    }
+}
+
+private struct MetricTile: View {
+    let title: String
+    let value: String
+    let tint: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.5))
+            Text(value)
+                .font(.title3.weight(.semibold).monospacedDigit())
+                .foregroundStyle(tint)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 10)
-        .padding(.vertical, 9)
-        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .padding(.vertical, 8)
+        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+    }
+}
+
+private struct UsageBar: View {
+    let fraction: Double
+    let tint: Color
+    var isPlaceholder = false
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                Capsule().fill(.white.opacity(0.09))
+                if !isPlaceholder {
+                    Capsule()
+                        .fill(tint.opacity(0.85))
+                        .frame(width: max(4, proxy.size.width * fraction))
+                }
+            }
+        }
+        .frame(height: 5)
+        .animation(.easeOut(duration: 0.25), value: fraction)
     }
 }

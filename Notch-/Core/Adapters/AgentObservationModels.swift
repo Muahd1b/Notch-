@@ -1,0 +1,64 @@
+import Foundation
+
+enum ObservedAgentProvider: String, Codable, Sendable, CaseIterable {
+    case codex
+    case claudeCode
+    case openCode
+    case ollama
+    case openClaw
+
+    var displayName: String {
+        switch self {
+        case .codex: return "Codex"
+        case .claudeCode: return "Claude"
+        case .openCode: return "OpenCode"
+        case .ollama: return "Ollama"
+        case .openClaw: return "OpenClaw"
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .codex: return "chevron.left.forwardslash.chevron.right"
+        case .claudeCode: return "asterisk"
+        case .openCode: return "terminal"
+        case .ollama: return "brain"
+        case .openClaw: return "claw"
+        }
+    }
+
+    /// Process names used to decide whether a provider is currently running.
+    var processNames: [String] {
+        switch self {
+        case .codex: return ["codex"]
+        case .claudeCode: return ["claude"]
+        case .openCode: return ["opencode"]
+        case .ollama: return ["ollama"]
+        case .openClaw: return ["openclaw"]
+        }
+    }
+}
+
+enum ObservedAgentStatus: String, Codable, Sendable {
+    case ongoing
+    case idle
+}
+
+struct ObservedAgentSession: Identifiable, Equatable, Codable, Sendable {
+    let id: String
+    let provider: ObservedAgentProvider
+    let title: String
+    let workspacePath: String
+    let status: ObservedAgentStatus
+    let confidence: AdapterConfidence
+    let lastActivityAt: Date
+    let model: String?
+    let summary: String?
+    let tokensUsed: Int?
+    let tokenLimit: Int?
+}
+
+struct AgentObserverPayload: Equatable, Codable, Sendable {
+    let updatedAt: Date
+    let sessions: [ObservedAgentSession]
+}

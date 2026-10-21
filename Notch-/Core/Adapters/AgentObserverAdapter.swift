@@ -1,31 +1,5 @@
 import Foundation
 
-enum ObservedAgentProvider: String, Codable, Sendable {
-    case codex
-    case claudeCode
-    case openClaw
-}
-
-enum ObservedAgentStatus: String, Codable, Sendable {
-    case ongoing
-    case idle
-}
-
-struct ObservedAgentSession: Identifiable, Equatable, Codable, Sendable {
-    let id: String
-    let provider: ObservedAgentProvider
-    let title: String
-    let workspacePath: String
-    let status: ObservedAgentStatus
-    let confidence: AdapterConfidence
-    let lastActivityAt: Date
-}
-
-struct AgentObserverPayload: Equatable, Codable, Sendable {
-    let updatedAt: Date
-    let sessions: [ObservedAgentSession]
-}
-
 actor AgentObserverAdapter: NotchAdapter {
     nonisolated let id = "agents.observer"
     nonisolated let kind: AdapterKind = .agents
@@ -79,22 +53,121 @@ actor AgentObserverAdapter: NotchAdapter {
     }
 
     func refresh() async {
-        let codexEnabled = await MainActor.run { AppSettingsStore.shared.codexMonitoringEnabled }
-        let claudeEnabled = await MainActor.run { AppSettingsStore.shared.claudeMonitoringEnabled }
-        let openClawEnabled = await MainActor.run { AppSettingsStore.shared.openClawMonitoringEnabled }
-        let showIdleAgents = await MainActor.run { AppSettingsStore.shared.showIdleAgents }
-        let sessions = collectSessions(
-            codexEnabled: codexEnabled,
-            claudeEnabled: claudeEnabled,
-            openClawEnabled: openClawEnabled,
-            showIdleAgents: showIdleAgents
-        )
+        let settings = await MainActor.run {
+            (
+                codex: AppSettingsStore.shared.codexMonitoringEnabled,
+                claude: AppSettingsStore.shared.claudeMonitoringEnabled,
+                openCode: AppSettingsStore.shared.openCodeMonitoringEnabled,
+                ollama: AppSettingsStore.shared.ollamaMonitoringEnabled,
+                openClaw: AppSettingsStore.shared.openClawMonitoringEnabled,
+                showIdle: AppSettingsStore.shared.showIdleAgents
+            )
+        }
+
+        let sessions = await collectSessions(settings: settings)
+        NSLog("Notch- agent observer: %d session(s)", sessions.count)
         let now = Date()
         lastSyncAt = now
         health = .healthy
 
+        await publish(sessions: sessions, updatedAt: now)
+    }
+
+    // MARK: - Collection
+
+    private func collectSessions(settings: (codex: Bool, claude: Bool, openCode: Bool, ollama: Bool, openClaw: Bool, showIdle: Bool)) async -> [ObservedAgentSession] {
+        let runningProviders = Self.runningProviderProcesses()
+        var sessions: [ObservedAgentSession] = []
+
+        if settings.codex {
+            sessions.append(contentsOf: AgentSessionScanner.codexSessions())
+        }
+        if settings.claude {
+            sessions.append(contentsOf: AgentSessionScanner.claudeSessions())
+        }
+        if settings.openCode {
+            sessions.append(contentsOf: await AgentSessionScanner.openCodeSessions())
+        }
+        if settings.ollama {
+            sessions.append(contentsOf: await AgentSessionScanner.ollamaSessions())
+        }
+        if settings.openClaw {
+            sessions.append(contentsOf: openClawSessions())
+        }
+
+        sessions = sessions.map { session in
+            guard let provider = runningProviders[session.provider] else { return session }
+            guard session.status == .idle, provider else { return session }
+            return ObservedAgentSession(
+                id: session.id,
+                provider: session.provider,
+                title: session.title,
+                workspacePath: session.workspacePath,
+                status: .ongoing,
+                confidence: session.confidence,
+                lastActivityAt: session.lastActivityAt,
+                model: session.model,
+                summary: session.summary,
+                tokensUsed: session.tokensUsed,
+                tokenLimit: session.tokenLimit
+            )
+        }
+
+        if !settings.showIdle {
+            sessions.removeAll { $0.status == .idle }
+        }
+
+        return Array(sessions.sorted { $0.lastActivityAt > $1.lastActivityAt }.prefix(12))
+    }
+
+    private func openClawSessions() -> [ObservedAgentSession] {
+        let files = AgentSessionScanner.recentFiles(
+            roots: [
+                "\(NSHomeDirectory())/.openclaw",
+                "\(NSHomeDirectory())/Library/Application Support/OpenClaw",
+            ],
+            extensions: ["jsonl", "json", "log"],
+            limit: 3
+        )
+
+        return files.map { file in
+            ObservedAgentSession(
+                id: "openclaw-\(file.url.path)",
+                provider: .openClaw,
+                title: file.url.deletingPathExtension().lastPathComponent,
+                workspacePath: file.url.deletingLastPathComponent().path,
+                status: AgentSessionScanner.status(for: file.modifiedAt),
+                confidence: .low,
+                lastActivityAt: file.modifiedAt,
+                model: nil,
+                summary: nil,
+                tokensUsed: nil,
+                tokenLimit: nil
+            )
+        }
+    }
+
+    /// One `ps` sweep per refresh keeps process detection cheap and provider-agnostic.
+    private static func runningProviderProcesses() -> [ObservedAgentProvider: Bool] {
+        let output = ShellCommand.run("/bin/ps", ["-Ao", "comm="]) ?? ""
+        let processNames = Set(
+            output.lowercased()
+                .split(separator: "\n")
+                .map { String($0).split(separator: "/").last.map(String.init) ?? "" }
+        )
+
+        var result: [ObservedAgentProvider: Bool] = [:]
+        for provider in ObservedAgentProvider.allCases where !provider.processNames.isEmpty {
+            result[provider] = provider.processNames.contains { processNames.contains($0) }
+        }
+        return result
+    }
+
+    // MARK: - Publishing
+
+    private func publish(sessions: [ObservedAgentSession], updatedAt: Date) async {
         do {
-            let payload = AgentObserverPayload(updatedAt: now, sessions: sessions)
+            let payload = AgentObserverPayload(updatedAt: updatedAt, sessions: sessions)
             let data = try encoder.encode(payload)
             let json = String(data: data, encoding: .utf8) ?? "{}"
             await eventBus.publish(
@@ -119,132 +192,6 @@ actor AgentObserverAdapter: NotchAdapter {
     private func refreshIntervalSeconds() async -> Double {
         await MainActor.run {
             max(3, AppSettingsStore.shared.agentRefreshInterval)
-        }
-    }
-
-    private func collectSessions(
-        codexEnabled: Bool,
-        claudeEnabled: Bool,
-        openClawEnabled: Bool,
-        showIdleAgents: Bool
-    ) -> [ObservedAgentSession] {
-        var sessions: [ObservedAgentSession] = []
-
-        if codexEnabled {
-            sessions.append(
-                contentsOf: scanProvider(
-                    provider: .codex,
-                    rootPaths: ["\(NSHomeDirectory())/.codex/sessions"],
-                    allowedExtensions: ["jsonl"]
-                )
-            )
-        }
-
-        if claudeEnabled {
-            sessions.append(
-                contentsOf: scanProvider(
-                    provider: .claudeCode,
-                    rootPaths: [
-                        "\(NSHomeDirectory())/.claude/projects",
-                        "\(NSHomeDirectory())/.claude/sessions",
-                    ],
-                    allowedExtensions: ["jsonl", "json"]
-                )
-            )
-        }
-
-        if openClawEnabled {
-            sessions.append(
-                contentsOf: scanProvider(
-                    provider: .openClaw,
-                    rootPaths: [
-                        "\(NSHomeDirectory())/.openclaw",
-                        "\(NSHomeDirectory())/Library/Application Support/OpenClaw",
-                    ],
-                    allowedExtensions: ["jsonl", "json", "log"]
-                )
-            )
-        }
-
-        if !showIdleAgents {
-            sessions.removeAll { $0.status == .idle }
-        }
-
-        return Array(
-            sessions
-                .sorted(by: { $0.lastActivityAt > $1.lastActivityAt })
-                .prefix(12)
-        )
-    }
-
-    private func scanProvider(
-        provider: ObservedAgentProvider,
-        rootPaths: [String],
-        allowedExtensions: Set<String>
-    ) -> [ObservedAgentSession] {
-        struct Candidate {
-            let fileURL: URL
-            let modifiedAt: Date
-        }
-
-        let fileManager = FileManager.default
-        var candidates: [Candidate] = []
-        candidates.reserveCapacity(16)
-
-        for rootPath in rootPaths {
-            var isDirectory: ObjCBool = false
-            guard fileManager.fileExists(atPath: rootPath, isDirectory: &isDirectory), isDirectory.boolValue else {
-                continue
-            }
-
-            let rootURL = URL(fileURLWithPath: rootPath, isDirectory: true)
-            guard let enumerator = fileManager.enumerator(
-                at: rootURL,
-                includingPropertiesForKeys: [.isRegularFileKey, .contentModificationDateKey],
-                options: [.skipsHiddenFiles, .skipsPackageDescendants]
-            ) else {
-                continue
-            }
-
-            var scannedFileCount = 0
-            for case let fileURL as URL in enumerator {
-                scannedFileCount += 1
-                if scannedFileCount > 5000 {
-                    break
-                }
-
-                guard
-                    let values = try? fileURL.resourceValues(forKeys: [.isRegularFileKey, .contentModificationDateKey]),
-                    values.isRegularFile == true
-                else {
-                    continue
-                }
-
-                let ext = fileURL.pathExtension.lowercased()
-                guard allowedExtensions.contains(ext) else { continue }
-                guard let modifiedAt = values.contentModificationDate else { continue }
-
-                candidates.append(Candidate(fileURL: fileURL, modifiedAt: modifiedAt))
-            }
-        }
-
-        let sorted = candidates.sorted(by: { $0.modifiedAt > $1.modifiedAt })
-        let recent = Array(sorted.prefix(6))
-        let now = Date()
-
-        return recent.map { candidate in
-            let status: ObservedAgentStatus =
-                candidate.modifiedAt > now.addingTimeInterval(-10 * 60) ? .ongoing : .idle
-
-            return ObservedAgentSession(
-                id: "\(provider.rawValue)-\(candidate.fileURL.path)",
-                provider: provider,
-                title: candidate.fileURL.deletingPathExtension().lastPathComponent,
-                workspacePath: candidate.fileURL.deletingLastPathComponent().path,
-                status: status,
-                confidence: .medium,
-                lastActivityAt: candidate.modifiedAt
-            )
         }
     }
 }

@@ -153,7 +153,7 @@ struct ShellViewModelTests {
     }
 }
 
-private actor FocusHistoryStoreStub: FocusSessionHistoryStoring {
+private final class FocusHistoryStoreStub: FocusSessionHistoryStoring, @unchecked Sendable {
     private var records: [FocusSessionRecord]
 
     init(records: [FocusSessionRecord]) {

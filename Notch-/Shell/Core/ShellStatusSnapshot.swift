@@ -195,9 +195,11 @@ struct ShellLocalhostService: Equatable, Identifiable, Codable {
     let cpuPercent: Int
 }
 
-enum ShellAgentProvider: String, Equatable, Hashable, Codable {
+enum ShellAgentProvider: String, Equatable, Hashable, Codable, CaseIterable {
     case codex
     case claudeCode
+    case openCode
+    case ollama
     case openClaw
 
     var title: String {
@@ -206,8 +208,27 @@ enum ShellAgentProvider: String, Equatable, Hashable, Codable {
             return "Codex"
         case .claudeCode:
             return "Claude"
+        case .openCode:
+            return "OpenCode"
+        case .ollama:
+            return "Ollama"
         case .openClaw:
             return "OpenClaw"
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .codex:
+            return "chevron.left.forwardslash.chevron.right"
+        case .claudeCode:
+            return "asterisk"
+        case .openCode:
+            return "terminal"
+        case .ollama:
+            return "brain"
+        case .openClaw:
+            return "antenna.radiowaves.left.and.right"
         }
     }
 }
@@ -226,6 +247,24 @@ struct ShellAgentSession: Equatable, Identifiable, Codable {
     let confidence: AdapterConfidence
     let lastActivityAt: Date
     let lastActivityLabel: String
+    let model: String?
+    let summary: String?
+    let tokensUsed: Int?
+    let tokenLimit: Int?
+
+    var usageFraction: Double? {
+        guard let tokensUsed, let tokenLimit, tokenLimit > 0 else { return nil }
+        return min(1, Double(tokensUsed) / Double(tokenLimit))
+    }
+
+    var usageLabel: String? {
+        guard let tokensUsed else { return nil }
+        let formatted = tokensUsed.formatted(.number.notation(.compactName))
+        if let tokenLimit, tokenLimit > 0 {
+            return "\(formatted) / \(tokenLimit.formatted(.number.notation(.compactName)))"
+        }
+        return formatted
+    }
 }
 
 enum ShellLocalhostServiceStatus: String, Equatable, Codable {
