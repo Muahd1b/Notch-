@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 actor AgentObserverAdapter: NotchAdapter {
@@ -6,12 +7,15 @@ actor AgentObserverAdapter: NotchAdapter {
 
     private let eventBus: NotchEventBus
     private let diagnostics: RuntimeDiagnostics?
+    private let settings: AppSettingsStore
     private let encoder: JSONEncoder
     private var pollTask: Task<Void, Never>?
     private var health: AdapterHealth = .unknown
     private var lastSyncAt: Date?
 
-    init(eventBus: NotchEventBus, diagnostics: RuntimeDiagnostics? = nil) {
+    init(eventBus: NotchEventBus, diagnostics: RuntimeDiagnostics? = nil, settings: AppSettingsStore = .shared) {
+        self.settings = settings
+
         self.eventBus = eventBus
         self.diagnostics = diagnostics
         let encoder = JSONEncoder()
@@ -53,13 +57,15 @@ actor AgentObserverAdapter: NotchAdapter {
     }
 
     func refresh() async {
+        // Nothing is running to observe while the display sleeps; skip the file and `ps` work.
+        guard CGDisplayIsAsleep(CGMainDisplayID()) == 0 else { return }
         let settings = await MainActor.run {
             (
-                codex: AppSettingsStore.shared.codexMonitoringEnabled,
-                claude: AppSettingsStore.shared.claudeMonitoringEnabled,
-                openCode: AppSettingsStore.shared.openCodeMonitoringEnabled,
-                ollama: AppSettingsStore.shared.ollamaMonitoringEnabled,
-                showIdle: AppSettingsStore.shared.showIdleAgents
+                codex: settings.codexMonitoringEnabled,
+                claude: settings.claudeMonitoringEnabled,
+                openCode: settings.openCodeMonitoringEnabled,
+                ollama: settings.ollamaMonitoringEnabled,
+                showIdle: settings.showIdleAgents
             )
         }
 
@@ -104,6 +110,7 @@ actor AgentObserverAdapter: NotchAdapter {
                 lastActivityAt: session.lastActivityAt,
                 model: session.model,
                 summary: session.summary,
+                branch: session.branch,
                 tokensUsed: session.tokensUsed,
                 tokenLimit: session.tokenLimit,
                 planUsagePercent: session.planUsagePercent
@@ -161,7 +168,7 @@ actor AgentObserverAdapter: NotchAdapter {
 
     private func refreshIntervalSeconds() async -> Double {
         await MainActor.run {
-            max(3, AppSettingsStore.shared.agentRefreshInterval)
+            max(3, settings.agentRefreshInterval)
         }
     }
 }

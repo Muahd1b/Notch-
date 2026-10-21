@@ -14,6 +14,7 @@ final class CoreRuntimeServices {
     let pageRegistry: PageRegistry
     let focusSessionHistory: FocusSessionHistoryService
     private let agentObserverAdapter: AgentObserverAdapter
+    private let settings: AppSettingsStore
     private let opsAdapter: OpsAdapter
     private let calendarService: CalendarEventKitService
     private let localhostService: LocalhostProbeService
@@ -27,7 +28,11 @@ final class CoreRuntimeServices {
     private var currentSnapshot: ShellStatusSnapshot
     private var calendarStoreChangedObserver: NSObjectProtocol?
 
-    init(defaults: UserDefaults = .standard, externalIntegrationsEnabled: Bool? = nil) {
+    init(
+        defaults: UserDefaults = .standard,
+        externalIntegrationsEnabled: Bool? = nil,
+        settings: AppSettingsStore = .shared
+    ) {
         let eventBus = NotchEventBus()
         let diagnostics = RuntimeDiagnostics(eventBus: eventBus)
         let integrationEnabled = externalIntegrationsEnabled ?? {
@@ -36,6 +41,7 @@ final class CoreRuntimeServices {
             return !args.contains("-uitest-mode") && env["XCTestConfigurationFilePath"] == nil
         }()
 
+        self.settings = settings
         self.eventBus = eventBus
         self.persistenceStore = PersistenceStore(defaults: defaults)
         self.diagnostics = diagnostics
@@ -46,7 +52,7 @@ final class CoreRuntimeServices {
             persistenceStore: self.persistenceStore,
             diagnostics: diagnostics
         )
-        self.agentObserverAdapter = AgentObserverAdapter(eventBus: eventBus, diagnostics: diagnostics)
+        self.agentObserverAdapter = AgentObserverAdapter(eventBus: eventBus, diagnostics: diagnostics, settings: settings)
         self.opsAdapter = OpsAdapter(eventBus: eventBus, diagnostics: diagnostics)
         self.calendarService = CalendarEventKitService(eventBus: eventBus, diagnostics: diagnostics)
         self.localhostService = LocalhostProbeService(eventBus: eventBus, diagnostics: diagnostics)
@@ -78,7 +84,7 @@ final class CoreRuntimeServices {
         await registerAdaptersIfNeeded()
         startEventSubscriptionIfNeeded()
         await adapterRegistry.startAll()
-        await habitsLearningService.start(dailyResetHour: AppSettingsStore.shared.habitsDailyResetHour)
+        await habitsLearningService.start(dailyResetHour: settings.habitsDailyResetHour)
         await refreshHabitsLearning()
         if externalIntegrationsEnabled {
             configureCalendarStoreChangedObserverIfNeeded()
@@ -228,6 +234,7 @@ final class CoreRuntimeServices {
             lastActivityLabel: lastActivityLabel,
             model: session.model,
             summary: session.summary,
+            branch: session.branch,
             tokensUsed: session.tokensUsed,
             tokenLimit: session.tokenLimit,
             planUsagePercent: session.planUsagePercent
@@ -236,17 +243,17 @@ final class CoreRuntimeServices {
 
     func refreshCalendar() async {
         guard externalIntegrationsEnabled else { return }
-        guard AppSettingsStore.shared.calendarEnabled else {
+        guard settings.calendarEnabled else {
             var nextSnapshot = currentSnapshot
             nextSnapshot = nextSnapshot.updatingCalendar([])
             currentSnapshot = nextSnapshot
             shellSnapshotConsumer?(nextSnapshot)
             return
         }
-        let lookahead = AppSettingsStore.shared.calendarLookaheadHours
-        let includeAllDay = AppSettingsStore.shared.calendarShowAllDayEvents
-        let selectedCalendarSourceIDs = AppSettingsStore.shared.selectedCalendarSourceIDs
-        let selectedReminderSourceIDs = AppSettingsStore.shared.selectedReminderSourceIDs
+        let lookahead = settings.calendarLookaheadHours
+        let includeAllDay = settings.calendarShowAllDayEvents
+        let selectedCalendarSourceIDs = settings.selectedCalendarSourceIDs
+        let selectedReminderSourceIDs = settings.selectedReminderSourceIDs
 
         let events = await calendarService.refresh(
             lookaheadHours: lookahead,
@@ -309,7 +316,7 @@ final class CoreRuntimeServices {
 
     func createFocusBlock() async -> Bool {
         guard externalIntegrationsEnabled else { return false }
-        let selectedCalendarSourceIDs = AppSettingsStore.shared.selectedCalendarSourceIDs
+        let selectedCalendarSourceIDs = settings.selectedCalendarSourceIDs
         let created = await calendarService.createQuickEvent(
             title: "Focus Block",
             durationMinutes: 25,
@@ -323,9 +330,9 @@ final class CoreRuntimeServices {
 
     func refreshLocalhost() async {
         guard externalIntegrationsEnabled else { return }
-        guard AppSettingsStore.shared.localhostMonitoringEnabled else { return }
+        guard settings.localhostMonitoringEnabled else { return }
 
-        let showHealthy = AppSettingsStore.shared.localhostShowHealthyServices
+        let showHealthy = settings.localhostShowHealthyServices
         let services = await localhostService.refresh(showHealthyServices: showHealthy)
 
         var nextSnapshot = currentSnapshot
@@ -335,13 +342,13 @@ final class CoreRuntimeServices {
     }
 
     func refreshHabitsLearning() async {
-        let dailyResetHour = AppSettingsStore.shared.habitsDailyResetHour
+        let dailyResetHour = settings.habitsDailyResetHour
         await habitsLearningService.refresh(dailyResetHour: dailyResetHour)
         var habits = await habitsLearningService.habits()
         var learnings = await habitsLearningService.learnings()
 
-        let habitsEnabled = AppSettingsStore.shared.habitsEnabled
-        let learningsEnabled = AppSettingsStore.shared.learningsEnabled
+        let habitsEnabled = settings.habitsEnabled
+        let learningsEnabled = settings.learningsEnabled
 
         if !habitsEnabled {
             habits = []
@@ -350,7 +357,7 @@ final class CoreRuntimeServices {
             learnings = []
         }
 
-        let notionSyncEnabled = AppSettingsStore.shared.notionSyncEnabled
+        let notionSyncEnabled = settings.notionSyncEnabled
         _ = await notionSyncService.syncIfConfigured(
             habits: habits,
             learnings: learnings,
@@ -364,14 +371,14 @@ final class CoreRuntimeServices {
     }
 
     func toggleHabitCompletion(id: String) async {
-        let dailyResetHour = AppSettingsStore.shared.habitsDailyResetHour
+        let dailyResetHour = settings.habitsDailyResetHour
         await habitsLearningService.refresh(dailyResetHour: dailyResetHour)
         await habitsLearningService.toggleHabit(id: id)
         await refreshHabitsLearning()
     }
 
     func habitsForSettings() async -> [ShellHabitProgress] {
-        let dailyResetHour = AppSettingsStore.shared.habitsDailyResetHour
+        let dailyResetHour = settings.habitsDailyResetHour
         await habitsLearningService.refresh(dailyResetHour: dailyResetHour)
         return await habitsLearningService.habits()
     }

@@ -1,5 +1,14 @@
 import Foundation
 
+extension ShellStatusSnapshot {
+    /// Everything that wants a human: ack gates, finished agent turns, stale schedules, red mains.
+    var attentionCount: Int {
+        let agents = agentSessions.filter { $0.status == .needsReview || $0.status == .failed }.count
+        let repos = ops.repos.filter { $0.ciState == "failure" }.count
+        return ops.needsYou.count + agents + ops.overdueCount + repos
+    }
+}
+
 struct ShellStatusSnapshot: Equatable {
     let focusLabel: String
     let nextEventLabel: String
@@ -247,9 +256,18 @@ struct ShellAgentSession: Equatable, Identifiable, Codable {
     let lastActivityLabel: String
     let model: String?
     let summary: String?
+    let branch: String?
     let tokensUsed: Int?
     let tokenLimit: Int?
     let planUsagePercent: Int?
+
+    /// The last path component is the useful part; the home directory itself is not a workspace name.
+    var workspaceLabel: String {
+        if workspacePath.isEmpty { return provider.title }
+        if workspacePath == NSHomeDirectory() { return "Home" }
+        let name = (workspacePath as NSString).lastPathComponent
+        return name.isEmpty ? workspacePath : name
+    }
 
     var usageFraction: Double? {
         guard let tokensUsed, let tokenLimit, tokenLimit > 0 else { return nil }

@@ -10,17 +10,11 @@ struct CoreRuntimeServicesTests {
         let defaults = UserDefaults(suiteName: suiteName) ?? .standard
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
-        let settings = AppSettingsStore.shared
-        let previousCodex = settings.codexMonitoringEnabled
-        let previousClaude = settings.claudeMonitoringEnabled
+        let settings = AppSettingsStore(defaults: defaults)
         settings.codexMonitoringEnabled = false
         settings.claudeMonitoringEnabled = false
-        defer {
-            settings.codexMonitoringEnabled = previousCodex
-            settings.claudeMonitoringEnabled = previousClaude
-        }
 
-        let runtime = CoreRuntimeServices(defaults: defaults, externalIntegrationsEnabled: false)
+        let runtime = CoreRuntimeServices(defaults: defaults, externalIntegrationsEnabled: false, settings: settings)
         await runtime.start()
 
         let snapshots = await runtime.adapterRegistry.snapshots()
@@ -52,7 +46,8 @@ struct CoreRuntimeServicesTests {
         defaults.removeObject(forKey: "notch.store.habits")
         defaults.removeObject(forKey: "notch.store.learnings")
 
-        let runtime = CoreRuntimeServices(defaults: defaults, externalIntegrationsEnabled: true)
+        let settings = AppSettingsStore(defaults: defaults)
+        let runtime = CoreRuntimeServices(defaults: defaults, externalIntegrationsEnabled: true, settings: settings)
         let recorder = SnapshotRecorder()
         runtime.bindShellSnapshotConsumer { snapshot in
             recorder.record(snapshot)
@@ -89,12 +84,10 @@ struct CoreRuntimeServicesTests {
         defaults.removeObject(forKey: "notch.store.habits")
         defaults.removeObject(forKey: "notch.store.learnings")
 
-        let settings = AppSettingsStore.shared
-        let previousHabitsEnabled = settings.habitsEnabled
+        let settings = AppSettingsStore(defaults: defaults)
         settings.habitsEnabled = true
-        defer { settings.habitsEnabled = previousHabitsEnabled }
 
-        let runtime = CoreRuntimeServices(defaults: defaults, externalIntegrationsEnabled: true)
+        let runtime = CoreRuntimeServices(defaults: defaults, externalIntegrationsEnabled: true, settings: settings)
         let recorder = SnapshotRecorder()
         runtime.bindShellSnapshotConsumer { snapshot in
             recorder.record(snapshot)
@@ -117,7 +110,7 @@ struct CoreRuntimeServicesTests {
 
         await runtime.stop()
 
-        let reloadedRuntime = CoreRuntimeServices(defaults: defaults, externalIntegrationsEnabled: true)
+        let reloadedRuntime = CoreRuntimeServices(defaults: defaults, externalIntegrationsEnabled: true, settings: settings)
         await reloadedRuntime.start()
         let persistedOrder = (await reloadedRuntime.habitsForSettings()).map(\.title)
         #expect(persistedOrder == ["Language", "Sport", "Journal"])
@@ -133,18 +126,14 @@ struct CoreRuntimeServicesTests {
         defaults.removeObject(forKey: "notch.store.learnings")
         defaults.removeObject(forKey: "notch.store.habits.lastDailyResetAnchor")
 
-        let settings = AppSettingsStore.shared
-        let previousResetHour = settings.habitsDailyResetHour
-        let previousMonitoring = (settings.codexMonitoringEnabled, settings.claudeMonitoringEnabled)
+        // A private store: this test used to mutate AppSettingsStore.shared, which wrote the
+        // user's real monitoring toggles when a run was interrupted.
+        let settings = AppSettingsStore(defaults: defaults)
         settings.habitsDailyResetHour = 4
         settings.codexMonitoringEnabled = false
         settings.claudeMonitoringEnabled = false
-        defer {
-            settings.habitsDailyResetHour = previousResetHour
-            (settings.codexMonitoringEnabled, settings.claudeMonitoringEnabled) = previousMonitoring
-        }
 
-        let runtime = CoreRuntimeServices(defaults: defaults, externalIntegrationsEnabled: false)
+        let runtime = CoreRuntimeServices(defaults: defaults, externalIntegrationsEnabled: false, settings: settings)
         await runtime.start()
 
         #expect(await runtime.createHabit(title: "Daily Reset Habit", targetUnits: 2))

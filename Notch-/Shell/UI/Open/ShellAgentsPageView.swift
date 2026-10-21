@@ -115,7 +115,7 @@ struct ShellAgentsPageView: View {
                         StatusDot(status: session.status)
                     }
 
-                    Text(session.summary ?? session.workspacePath)
+                    Text(session.summary ?? session.workspaceLabel)
                         .font(.caption2)
                         .foregroundStyle(.white.opacity(0.55))
                         .lineLimit(1)
@@ -213,6 +213,16 @@ struct ShellAgentsPageView: View {
                 StatusPill(status: session.status)
             }
 
+            if let branch = session.branch, !branch.isEmpty {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.triangle.branch")
+                        .font(.caption2)
+                    Text(branch)
+                        .font(.caption2.monospaced())
+                }
+                .foregroundStyle(.white.opacity(0.55))
+            }
+
             if let summary = session.summary {
                 Text(summary)
                     .font(.callout)
@@ -243,7 +253,7 @@ struct ShellAgentsPageView: View {
             Image(systemName: "folder")
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.45))
-            Text(session.workspacePath)
+            Text(session.workspaceLabel)
                 .font(.caption.monospaced())
                 .foregroundStyle(.white.opacity(0.6))
                 .lineLimit(1)

@@ -53,6 +53,7 @@ enum AgentSessionScanner {
                 lastActivityAt: file.modifiedAt,
                 model: model,
                 summary: lastUserMessage(in: tail),
+                branch: nil,
                 tokensUsed: usage?.used,
                 tokenLimit: usage?.limit,
                 planUsagePercent: codexPlanUsage(in: tail)
@@ -175,10 +176,12 @@ enum AgentSessionScanner {
             var cwd: String?
             var model: String?
             var tokens: Int?
+            var branch: String?
 
             for line in tail.reversed() {
                 guard let object = jsonObject(fromLine: line) else { continue }
                 if cwd == nil { cwd = object["cwd"] as? String }
+                if branch == nil { branch = object["gitBranch"] as? String }
                 if let message = object["message"] as? [String: Any] {
                     if model == nil { model = message["model"] as? String }
                     if tokens == nil,
@@ -204,6 +207,7 @@ enum AgentSessionScanner {
                 lastActivityAt: file.modifiedAt,
                 model: model,
                 summary: lastUserMessage(in: tail),
+                branch: branch,
                 tokensUsed: tokens,
                 tokenLimit: 200_000,
                 planUsagePercent: nil
@@ -284,6 +288,7 @@ enum AgentSessionScanner {
                 lastActivityAt: updatedAt,
                 model: nil,
                 summary: nil,
+                branch: nil,
                 tokensUsed: input + output,
                 tokenLimit: nil,
                 planUsagePercent: nil
@@ -349,6 +354,7 @@ enum AgentSessionScanner {
                 lastActivityAt: now,
                 model: name,
                 summary: size.map { "\($0 / 1_000_000_000) GB resident" },
+                branch: nil,
                 tokensUsed: nil,
                 tokenLimit: nil,
                 planUsagePercent: nil

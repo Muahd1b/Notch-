@@ -55,6 +55,7 @@ struct ObservedAgentSession: Identifiable, Equatable, Codable, Sendable {
     let lastActivityAt: Date
     let model: String?
     let summary: String?
+    let branch: String?
     let tokensUsed: Int?
     let tokenLimit: Int?
     /// Codex plan usage for the current rate-limit window, when the rollout reports it.

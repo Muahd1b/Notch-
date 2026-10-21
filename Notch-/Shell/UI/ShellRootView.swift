@@ -50,6 +50,16 @@ struct ShellRootView: View {
             shellFadeGeometry
             shellSurface
                 .frame(width: shellBodyWidth, height: shellBodyHeight, alignment: .top)
+
+            if case .closed = presentationState, viewModel.statusSnapshot.attentionCount > 0 {
+                Circle()
+                    .fill(Color.orange)
+                    .frame(width: 6, height: 6)
+                    .shadow(color: .orange.opacity(0.7), radius: 3)
+                    .offset(y: shellBodyHeight + 3)
+                    .accessibilityLabel("\(viewModel.statusSnapshot.attentionCount) items need attention")
+                    .allowsHitTesting(false)
+            }
         }
             .padding(.horizontal, ShellSizing.shadowPadding)
             .padding(.bottom, ShellSizing.shadowPadding)
@@ -124,6 +134,7 @@ struct ShellRootView: View {
             Rectangle()
                 .fill(.clear)
                 .frame(width: max(closedNotchSize.width - 20, 0), height: closedNotchSize.height)
+
 
         case .open:
             ShellOpenContentView(viewModel: viewModel, displayID: displayID, statusSnapshot: viewModel.statusSnapshot)

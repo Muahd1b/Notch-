@@ -9,21 +9,22 @@ struct ShellOpenContentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ShellHeaderView(viewModel: viewModel, displayID: displayID, statusSnapshot: statusSnapshot)
-                .frame(height: max(24, viewModel.closedNotchSize(for: displayID).height))
+                .frame(height: max(24, viewModel.closedNotchSize(for: displayID).height) + 14)
+                .padding(.top, 14)
 
             if viewModel.selectedOpenTab == .focusTimer ||
                 viewModel.selectedOpenTab == .hud ||
                 viewModel.selectedOpenTab == .habits
             {
                 openViewportContent
-                    .padding(.top, ShellSizing.openContentSpacing)
+                    .padding(.top, 0)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     .clipped()
             } else {
                 ScrollView(.vertical, showsIndicators: false) {
                     openViewportContent
                         .frame(maxWidth: .infinity, alignment: .topLeading)
-                        .padding(.top, ShellSizing.openContentSpacing)
+                        .padding(.top, 0)
                 }
                 .scrollDisabled(false)
                 .scrollBounceBehavior(.basedOnSize, axes: .vertical)

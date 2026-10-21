@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 /// Publishes the operator snapshot: scheduled automations, ack gates, and repo health.
@@ -58,6 +59,8 @@ actor OpsAdapter: NotchAdapter {
     }
 
     func refresh() async {
+        // Repo polling is the most expensive tick; do not run it with the lid closed.
+        guard CGDisplayIsAsleep(CGMainDisplayID()) == 0 else { return }
         let payload = await collect()
         lastSyncAt = payload.updatedAt
         health = .healthy
