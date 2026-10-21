@@ -118,10 +118,11 @@ Notable examples:
 - Current Notion path performs a connectivity check (`/v1/users/me`) only.
 - No habits/learnings write-back or read-sync model exists yet.
 
-### Agent monitoring
+### Agent monitoring — largely resolved 2026-10-21
 
-- No observer adapters yet for Codex/Claude/OpenClaw.
-- Agent page remains placeholder.
+- `AgentObserverAdapter` now reads Codex rollouts, Claude Code transcripts, the OpenCode database and the Ollama runtime API with token usage and task summaries.
+- The App Sandbox entitlement was the root cause of the permanently empty Agents page: the observer runs out of process-visible paths only when unsandboxed.
+- Remaining: OpenClaw has no structured store yet (best-effort file scan, low confidence), and there is no drill-down into a provider session.
 
 ### Notifications/OpenClaw/Financial
 

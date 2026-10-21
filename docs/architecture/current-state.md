@@ -68,11 +68,22 @@ Implemented today:
   - camera preview with mac camera preference and permission-aware fallback
   - full-display stream preview with screen-recording permission flow
 - persisted focus session history with daily and all-time focus metrics on the Focus page
+- seven-day focus history strip, current streak and last-session summary on the Focus page
+- real agent monitoring (2026-10-21):
+  - App Sandbox removed so the observer can read local session stores; the sandboxed build could never see `~/.codex/sessions`
+  - Codex sessions parsed for model, task summary, total tokens and `model_context_window`
+  - Claude Code transcripts parsed for model, cwd, task summary and usage tokens
+  - OpenCode sessions read from `~/.local/share/opencode/opencode.db`
+  - Ollama running models listed from the local runtime API
+  - process detection (`ps`) upgrades recently idle sessions to ongoing while the provider is running
+- Agents page shows provider glyph, task summary, model, token usage bar and copyable workspace path
+- launch-at-login is wired to `SMAppService` instead of being a store-only toggle
 
 Not implemented yet:
 
 - production adapters/pages for notifications, OpenClaw, and financial board
-- richer agent monitoring beyond local observer heuristics (event hooks, task usage summaries, provider-specific drill-down)
+- provider-specific agent drill-down (open the SDK/session from the notch)
+- OpenCode and Ollama session-level summaries (title/usage only today)
 - richer cross-page focus analytics aggregation
 - detached utility windows for HUD stream workflows (current HUD stream is in-notch preview)
 - full `peek` behavior and deeper page-specific domain rendering for remaining placeholder pages
