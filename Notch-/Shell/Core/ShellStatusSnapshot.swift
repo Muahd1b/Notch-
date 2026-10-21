@@ -235,6 +235,8 @@ enum ShellAgentProvider: String, Equatable, Hashable, Codable, CaseIterable {
 
 enum ShellAgentSessionStatus: String, Equatable, Codable {
     case ongoing
+    case needsReview
+    case failed
     case idle
 }
 
@@ -251,6 +253,7 @@ struct ShellAgentSession: Equatable, Identifiable, Codable {
     let summary: String?
     let tokensUsed: Int?
     let tokenLimit: Int?
+    let planUsagePercent: Int?
 
     var usageFraction: Double? {
         guard let tokensUsed, let tokenLimit, tokenLimit > 0 else { return nil }

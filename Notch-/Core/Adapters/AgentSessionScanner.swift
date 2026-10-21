@@ -21,34 +21,107 @@ enum AgentSessionScanner {
             extensions: ["jsonl"],
             limit: min(limit, maxFilesPerProvider) * 3
         )
+        let threadNames = codexThreadNames(sessionsRoot: rootPath)
 
         return files.compactMap { file -> ObservedAgentSession? in
             var cwd: String?
+            var threadID: String?
             if let firstLine = headLines(of: file.url).first,
                let object = jsonObject(fromLine: firstLine),
                let payload = object["payload"] as? [String: Any] {
+                // Guardian/subagent rollouts are machine review threads, not the user's work.
+                if payload["thread_source"] as? String == "guardian_review" { return nil }
+                if let source = payload["source"] as? [String: Any], source["subagent"] != nil { return nil }
+
                 cwd = payload["cwd"] as? String
+                threadID = payload["id"] as? String
             }
             let workspace = cwd ?? file.url.deletingLastPathComponent().path
 
             let tail = tailLines(of: file.url)
             let usage = codexUsage(in: tail)
             let model = codexModel(in: tail)
+            let title = threadID.flatMap { threadNames[$0] } ?? workspaceTitle(for: workspace)
 
             return ObservedAgentSession(
                 id: "codex-\(file.url.lastPathComponent)",
                 provider: .codex,
-                title: workspaceTitle(for: workspace),
+                title: title,
                 workspacePath: workspace,
-                status: status(for: file.modifiedAt),
+                status: codexStatus(in: tail, lastActivityAt: file.modifiedAt),
                 confidence: usage == nil ? .medium : .high,
                 lastActivityAt: file.modifiedAt,
                 model: model,
                 summary: lastUserMessage(in: tail),
                 tokensUsed: usage?.used,
-                tokenLimit: usage?.limit
+                tokenLimit: usage?.limit,
+                planUsagePercent: codexPlanUsage(in: tail)
             )
         }
+    }
+
+    /// `~/.codex/session_index.jsonl` maps thread ids to the name the user gave the thread.
+    private static func codexThreadNames(sessionsRoot: String) -> [String: String] {
+        let indexURL = URL(fileURLWithPath: sessionsRoot)
+            .deletingLastPathComponent()
+            .appendingPathComponent("session_index.jsonl")
+        guard FileManager.default.fileExists(atPath: indexURL.path) else { return [:] }
+
+        var names: [String: String] = [:]
+        for line in lines(of: indexURL, fromEnd: true, byteCount: 256 * 1024) {
+            guard
+                let object = jsonObject(fromLine: line),
+                let identifier = object["id"] as? String,
+                let name = object["thread_name"] as? String,
+                !name.isEmpty
+            else { continue }
+            names[identifier] = name
+        }
+        return names
+    }
+
+    private static func codexStatus(
+        in lines: [String],
+        lastActivityAt: Date,
+        now: Date = Date()
+    ) -> ObservedAgentStatus {
+        for line in lines.reversed() {
+            guard
+                let object = jsonObject(fromLine: line),
+                object["type"] as? String == "event_msg",
+                let payload = object["payload"] as? [String: Any],
+                let type = payload["type"] as? String
+            else { continue }
+
+            switch type {
+            case "task_complete":
+                return .needsReview
+            case "turn_aborted":
+                return .failed
+            case "task_started":
+                return status(for: lastActivityAt, now: now)
+            default:
+                continue
+            }
+        }
+        return status(for: lastActivityAt, now: now)
+    }
+
+    private static func codexPlanUsage(in lines: [String]) -> Int? {
+        for line in lines.reversed() {
+            guard
+                let object = jsonObject(fromLine: line),
+                object["type"] as? String == "event_msg",
+                let payload = object["payload"] as? [String: Any],
+                payload["type"] as? String == "token_count",
+                let info = payload["info"] as? [String: Any],
+                let limits = info["rate_limits"] as? [String: Any],
+                let primary = limits["primary"] as? [String: Any],
+                let percent = (primary["used_percent"] as? NSNumber)?.intValue
+            else { continue }
+            return percent
+        }
+        return nil
     }
 
     private static func codexUsage(in lines: [String]) -> (used: Int, limit: Int?)? {
@@ -126,15 +199,42 @@ enum AgentSessionScanner {
                 provider: .claudeCode,
                 title: workspaceTitle(for: workspace),
                 workspacePath: workspace,
-                status: status(for: file.modifiedAt),
+                status: claudeStatus(in: tail, lastActivityAt: file.modifiedAt),
                 confidence: tokens == nil ? .medium : .high,
                 lastActivityAt: file.modifiedAt,
                 model: model,
                 summary: lastUserMessage(in: tail),
                 tokensUsed: tokens,
-                tokenLimit: 200_000
+                tokenLimit: 200_000,
+                planUsagePercent: nil
             )
         }
+    }
+
+    /// A transcript whose last line is an assistant turn that ended cleanly is waiting for review;
+    /// if the user has spoken since, the agent is mid-turn again.
+    private static func claudeStatus(
+        in lines: [String],
+        lastActivityAt: Date,
+        now: Date = Date()
+    ) -> ObservedAgentStatus {
+        for line in lines.reversed() {
+            guard
+                let object = jsonObject(fromLine: line),
+                let type = object["type"] as? String
+            else { continue }
+
+            switch type {
+            case "assistant":
+                let stopReason = (object["message"] as? [String: Any])?["stop_reason"] as? String
+                return stopReason == "end_turn" ? .needsReview : .ongoing
+            case "user":
+                return .ongoing
+            default:
+                continue
+            }
+        }
+        return status(for: lastActivityAt, now: now)
     }
 
     // MARK: - OpenCode
@@ -153,6 +253,10 @@ enum AgentSessionScanner {
         """
 
         guard let rows = await SQLiteJSONQuery.run(databasePath: databasePath, query: query) else { return [] }
+        let roles = await openCodeLastRoles(
+            databasePath: databasePath,
+            sessionIDs: rows.compactMap { $0["id"] as? String }
+        )
 
         return rows.compactMap { row -> ObservedAgentSession? in
             guard let identifier = row["id"] as? String else { return nil }
@@ -162,6 +266,12 @@ enum AgentSessionScanner {
             let input = row["tokens_input"] as? Int ?? 0
             let output = row["tokens_output"] as? Int ?? 0
             let updatedAt = Date(timeIntervalSince1970: updatedMillis / 1000)
+            let status: ObservedAgentStatus
+            switch roles[identifier] {
+            case "assistant": status = .needsReview
+            case "user": status = .ongoing
+            default: status = Self.status(for: updatedAt)
+            }
 
             return ObservedAgentSession(
                 id: "opencode-\(identifier)",
@@ -169,15 +279,46 @@ enum AgentSessionScanner {
                 title: (row["title"] as? String).flatMap { $0.isEmpty ? nil : $0 }
                     ?? workspaceTitle(for: directory),
                 workspacePath: directory,
-                status: status(for: updatedAt),
+                status: status,
                 confidence: .high,
                 lastActivityAt: updatedAt,
                 model: nil,
                 summary: nil,
                 tokensUsed: input + output,
-                tokenLimit: nil
+                tokenLimit: nil,
+                planUsagePercent: nil
             )
         }
+    }
+
+    /// Last message role per session, so a finished assistant turn reads as "needs review".
+    private static func openCodeLastRoles(
+        databasePath: String,
+        sessionIDs: [String]
+    ) async -> [String: String] {
+        guard !sessionIDs.isEmpty else { return [:] }
+        let quoted = sessionIDs
+            .map { "'" + $0.replacingOccurrences(of: "'", with: "''") + "'" }
+            .joined(separator: ",")
+        let query = """
+        select session_id, json_extract(data, '$.role') as role
+        from message
+        where session_id in (\(quoted))
+        order by time_created desc
+        limit 400;
+        """
+        guard let rows = await SQLiteJSONQuery.run(databasePath: databasePath, query: query) else { return [:] }
+
+        var roles: [String: String] = [:]
+        for row in rows {
+            guard
+                let identifier = row["session_id"] as? String,
+                let role = row["role"] as? String,
+                roles[identifier] == nil
+            else { continue }
+            roles[identifier] = role
+        }
+        return roles
     }
 
     // MARK: - Ollama
@@ -209,7 +350,8 @@ enum AgentSessionScanner {
                 model: name,
                 summary: size.map { "\($0 / 1_000_000_000) GB resident" },
                 tokensUsed: nil,
-                tokenLimit: nil
+                tokenLimit: nil,
+                planUsagePercent: nil
             )
         }
     }

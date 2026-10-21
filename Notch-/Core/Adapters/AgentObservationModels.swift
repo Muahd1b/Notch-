@@ -40,7 +40,12 @@ enum ObservedAgentProvider: String, Codable, Sendable, CaseIterable {
 }
 
 enum ObservedAgentStatus: String, Codable, Sendable {
+    /// The agent is mid-turn.
     case ongoing
+    /// The agent finished a turn and nobody has looked at the result yet.
+    case needsReview
+    /// The last turn was aborted or failed.
+    case failed
     case idle
 }
 
@@ -56,6 +61,8 @@ struct ObservedAgentSession: Identifiable, Equatable, Codable, Sendable {
     let summary: String?
     let tokensUsed: Int?
     let tokenLimit: Int?
+    /// Codex plan usage for the current rate-limit window, when the rollout reports it.
+    let planUsagePercent: Int?
 }
 
 struct AgentObserverPayload: Equatable, Codable, Sendable {

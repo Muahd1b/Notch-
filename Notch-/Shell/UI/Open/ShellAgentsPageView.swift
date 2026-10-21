@@ -13,6 +13,16 @@ struct ShellAgentsPageView: View {
         statusSnapshot.agentSessions
     }
 
+    private var needsReviewCount: Int {
+        sessions.filter { $0.status == .needsReview }.count
+    }
+
+    private var summaryLabel: String {
+        if needsReviewCount > 0 { return "\(needsReviewCount) need review" }
+        let working = sessions.filter { $0.status == .ongoing }.count
+        return working > 0 ? "\(working) working" : "idle"
+    }
+
     private var selectedSession: ShellAgentSession? {
         sessions.first { $0.id == selectedSessionID } ?? sessions.first
     }
@@ -46,7 +56,7 @@ struct ShellAgentsPageView: View {
                     .font(.headline)
                     .foregroundStyle(.white)
                 Spacer(minLength: 8)
-                Text("\(sessions.filter { $0.status == .ongoing }.count) active")
+                Text(summaryLabel)
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.55))
             }
@@ -175,14 +185,14 @@ struct ShellAgentsPageView: View {
     private var metricsRow: some View {
         HStack(spacing: 8) {
             MetricTile(
-                title: "Ongoing",
-                value: "\(sessions.filter { $0.status == .ongoing }.count)",
-                tint: .green
+                title: "Needs review",
+                value: "\(sessions.filter { $0.status == .needsReview }.count)",
+                tint: .orange
             )
             MetricTile(
-                title: "Idle",
-                value: "\(sessions.filter { $0.status == .idle }.count)",
-                tint: .white.opacity(0.45)
+                title: "Working",
+                value: "\(sessions.filter { $0.status == .ongoing }.count)",
+                tint: .green
             )
             MetricTile(
                 title: "Providers",
@@ -275,6 +285,12 @@ struct ShellAgentsPageView: View {
             } else {
                 UsageBar(fraction: 0, tint: providerTint(session.provider), isPlaceholder: true)
             }
+
+            if let plan = session.planUsagePercent {
+                Text("Plan window \(plan)% used")
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(plan >= 85 ? Color.orange : .white.opacity(0.45))
+            }
         }
     }
 
@@ -296,9 +312,9 @@ private struct StatusDot: View {
 
     var body: some View {
         Circle()
-            .fill(status == .ongoing ? Color.green : Color.white.opacity(0.3))
+            .fill(status.tint)
             .frame(width: 6, height: 6)
-            .accessibilityLabel(status == .ongoing ? "Ongoing" : "Idle")
+            .accessibilityLabel(status.label)
     }
 }
 
@@ -306,15 +322,32 @@ private struct StatusPill: View {
     let status: ShellAgentSessionStatus
 
     var body: some View {
-        Text(status == .ongoing ? "Ongoing" : "Idle")
+        Text(status.label)
             .font(.caption2.weight(.semibold))
-            .foregroundStyle(status == .ongoing ? Color.green : Color.white.opacity(0.6))
+            .foregroundStyle(status.tint)
             .padding(.horizontal, 7)
             .padding(.vertical, 3)
-            .background(
-                (status == .ongoing ? Color.green : Color.white).opacity(0.12),
-                in: Capsule()
-            )
+            .background(status.tint.opacity(0.12), in: Capsule())
+    }
+}
+
+extension ShellAgentSessionStatus {
+    var label: String {
+        switch self {
+        case .ongoing: return "Working"
+        case .needsReview: return "Needs review"
+        case .failed: return "Failed"
+        case .idle: return "Idle"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .ongoing: return .green
+        case .needsReview: return .orange
+        case .failed: return .red
+        case .idle: return .white.opacity(0.3)
+        }
     }
 }
 

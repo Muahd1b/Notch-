@@ -168,6 +168,10 @@ final class CoreRuntimeServices {
         switch session.status {
         case .ongoing:
             status = .ongoing
+        case .needsReview:
+            status = .needsReview
+        case .failed:
+            status = .failed
         case .idle:
             status = .idle
         }
@@ -188,7 +192,8 @@ final class CoreRuntimeServices {
             model: session.model,
             summary: session.summary,
             tokensUsed: session.tokensUsed,
-            tokenLimit: session.tokenLimit
+            tokenLimit: session.tokenLimit,
+            planUsagePercent: session.planUsagePercent
         )
     }
 

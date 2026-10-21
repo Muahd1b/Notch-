@@ -109,7 +109,8 @@ actor AgentObserverAdapter: NotchAdapter {
                 model: session.model,
                 summary: session.summary,
                 tokensUsed: session.tokensUsed,
-                tokenLimit: session.tokenLimit
+                tokenLimit: session.tokenLimit,
+                planUsagePercent: session.planUsagePercent
             )
         }
 
@@ -142,7 +143,8 @@ actor AgentObserverAdapter: NotchAdapter {
                 model: nil,
                 summary: nil,
                 tokensUsed: nil,
-                tokenLimit: nil
+                tokenLimit: nil,
+                planUsagePercent: nil
             )
         }
     }
